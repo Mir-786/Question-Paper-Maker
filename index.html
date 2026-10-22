@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>পশ্চিমবঙ্গ পর্ষদ প্রশ্নপত্র নির্মাতা (Class 1-12)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Serif Bengali -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Serif Bengali', serif;
+    }
+    @media print {
+      @page {
+        size: A4;
+        margin: 15mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen py-6 px-4 sm:px-6">
+
+  <!-- Control Panel (Hidden when printing PDF) -->
+  <div class="max-w-4xl mx-auto no-print mb-8">
+    <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-5 sm:p-8">
+      <div class="border-b border-slate-200 pb-4 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-indigo-950">
+          পশ্চিমবঙ্গ পর্ষদ প্রশ্নপত্র নির্মাতা (Class 1–12)
+        </h1>
+        <p class="text-slate-600 mt-1 text-sm sm:text-base">
+          WBBPE, WBBSE এবং WBCHSE সিলেবাস অনুযায়ী বাংলায় প্রশ্নপত্র তৈরি করুন
+        </p>
+      </div>
+
+      <form id="paperForm" class="space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Class Selector -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+              শ্রেণি নির্বাচন করুন (Class 1 - 12)
+            </label>
+            <select id="selectedClass" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+              <option value="1">Class 1 (১ম শ্রেণি)</option>
+              <option value="2">Class 2 (২য় শ্রেণি)</option>
+              <option value="3">Class 3 (৩য় শ্রেণি)</option>
+              <option value="4">Class 4 (৪র্থ শ্রেণি)</option>
+              <option value="5">Class 5 (৫ম শ্রেণি)</option>
+              <option value="6">Class 6 (৬ষ্ঠ শ্রেণি)</option>
+              <option value="7">Class 7 (৭ম শ্রেণি)</option>
+              <option value="8">Class 8 (৮ম শ্রেণি)</option>
+              <option value="9">Class 9 (৯ম শ্রেণি)</option>
+              <option value="10" selected>Class 10 (১০ম শ্রেণি)</option>
+              <option value="11">Class 11 (১১শ শ্রেণি)</option>
+              <option value="12">Class 12 (১২শ শ্রেণি)</option>
+            </select>
+          </div>
+
+          <!-- Subject Selector -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+              বিষয় (Subject)
+            </label>
+            <select id="subject" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+              <option value="বাংলা (Bengali)">বাংলা (Bengali)</option>
+              <option value="গণিত (Mathematics)">গণিত (Mathematics)</option>
+              <option value="ভৌতবিজ্ঞান (Physical Science)" selected>ভৌতবিজ্ঞান (Physical Science)</option>
+              <option value="জীবনবিজ্ঞান (Life Science)">জীবনবিজ্ঞান (Life Science)</option>
+              <option value="ইতিহাস (History)">ইতিহাস (History)</option>
+              <option value="ভূগোল (Geography)">ভূগোল (Geography)</option>
+              <option value="পরিবেশ ও বিজ্ঞান (Environment & Science)">পরিবেশ ও বিজ্ঞান (Environment & Science)</option>
+              <option value="আমাদের পরিবেশ (Amader Paribesh)">আমাদের পরিবেশ (Amader Paribesh)</option>
+              <option value="পদার্থবিদ্যা (Physics)">পদার্থবিদ্যা (Physics - XI/XII)</option>
+              <option value="রসায়ন (Chemistry)">রসায়ন (Chemistry - XI/XII)</option>
+              <option value="জীববিদ্যা (Biology)">জীববিদ্যা (Biology - XI/XII)</option>
+              <option value="রাষ্ট্রবিজ্ঞান (Political Science)">রাষ্ট্রবিজ্ঞান (Political Science)</option>
+              <option value="দর্শন (Philosophy)">দর্শন (Philosophy)</option>
+              <option value="শিক্ষাবিজ্ঞান (Education)">শিক্ষাবিজ্ঞান (Education)</option>
+              <option value="হিসাবশাস্ত্র (Accountancy)">হিসাবশাস্ত্র (Accountancy)</option>
+              <option value="কারবারি শিক্ষা (Business Studies)">কারবারি শিক্ষা (Business Studies)</option>
+              <option value="অর্থনীতি (Economics)">অর্থনীতি (Economics)</option>
+              <option value="কম্পিউটার অ্যাপ্লিকেশন (Computer Application)">কম্পিউটার অ্যাপ্লিকেশন (Computer Application)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Topics / Chapters Input -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+            অধ্যায় বা বিষয়বস্তু (Topics / Chapters)
+          </label>
+          <textarea
+            id="topics"
+            rows="2"
+            required
+            placeholder="যেমন: আলো, চলতড়িৎ, পর্যায় সারণি"
+            class="w-full rounded-lg border border-slate-300 px-3.5 py-2 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+          >আলো, চলতড়িৎ, পর্যায় সারণি</textarea>
+        </div>
+
+        <!-- Marks & Question Counts -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">পূর্ণমান (Full Marks)</label>
+            <input id="fullMarks" type="number" min="5" max="100" value="40" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">MCQ সংখ্যা (×১)</label>
+            <input id="mcqCount" type="number" min="0" max="50" value="10" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">শূন্যস্থান সংখ্যা (×১)</label>
+            <input id="fillBlanksCount" type="number" min="0" max="50" value="10" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">বড় প্রশ্নের সংখ্যা</label>
+            <input id="longQCount" type="number" min="0" max="25" value="4" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">প্রতিটি বড় প্রশ্নের মান</label>
+            <input id="longQMarksEach" type="number" min="2" max="15" value="5" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+          </div>
+        </div>
+
+        <!-- Marks Tally Banner -->
+        <div id="marksBanner" class="p-3 rounded-lg text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between">
+          <span id="marksSummaryText"></span>
+          <button type="button" id="syncMarksBtn" class="hidden text-xs font-semibold underline">পূর্ণমান মেলান</button>
+        </div>
+
+        <!-- Error Message Box -->
+        <div id="errorBox" class="hidden p-4 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200"></div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <button
+            type="submit"
+            id="generateBtn"
+            class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition cursor-pointer"
+          >
+            প্রশ্নপত্র তৈরি করুন (Generate Paper)
+          </button>
+
+          <div id="paperActions" class="hidden flex items-center gap-2">
+            <button
+              type="button"
+              id="toggleAnswersBtn"
+              class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-medium"
+            >
+              উত্তরপত্র দেখুন (Answer Key)
+            </button>
+            <button
+              type="button"
+              onclick="window.print()"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm"
+            >
+              প্রিন্ট / PDF ডাউনলোড
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Printable Question Paper Container -->
+  <div id="paperContainer" class="hidden max-w-4xl mx-auto bg-white shadow-lg border border-slate-200 p-6 sm:p-12 rounded-xl"></div>
+
+  <script>
+    const bengaliDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+    const optionLabels = ["ক", "খ", "গ", "ঘ"];
+    const toBn = (n) => String(n).replace(/[0-9]/g, (w) => bengaliDigits[+w]);
+
+    const fullMarksEl = document.getElementById("fullMarks");
+    const mcqCountEl = document.getElementById("mcqCount");
+    const fillBlanksCountEl = document.getElementById("fillBlanksCount");
+    const longQCountEl = document.getElementById("longQCount");
+    const longQMarksEachEl = document.getElementById("longQMarksEach");
+    const marksBanner = document.getElementById("marksBanner");
+    const marksSummaryText = document.getElementById("marksSummaryText");
+    const syncMarksBtn = document.getElementById("syncMarksBtn");
+
+    let currentPaper = null;
+    let showAnswers = false;
+
+    function updateMarksTally() {
+      const fm = Number(fullMarksEl.value) || 0;
+      const mcq = Number(mcqCountEl.value) || 0;
+      const fb = Number(fillBlanksCountEl.value) || 0;
+      const lq = Number(longQCountEl.value) || 0;
+      const lqm = Number(longQMarksEachEl.value) || 0;
+      const total = mcq + fb + lq * lqm;
+
+      marksSummaryText.innerHTML = `প্রশ্নের মোট নম্বর হিসাব: <strong>(${toBn(mcq)}×১) + (${toBn(fb)}×১) + (${toBn(lq)}×${toBn(lqm)}) = ${toBn(total)}</strong>`;
+
+      if (total === fm) {
+        marksBanner.className = "p-3 rounded-lg text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between";
+        syncMarksBtn.classList.add("hidden");
+      } else {
+        marksBanner.className = "p-3 rounded-lg text-sm bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-between";
+        syncMarksBtn.classList.remove("hidden");
+        syncMarksBtn.onclick = () => {
+          fullMarksEl.value = total;
+          updateMarksTally();
+        };
+      }
+    }
+
+    [fullMarksEl, mcqCountEl, fillBlanksCountEl, longQCountEl, longQMarksEachEl].forEach(el => {
+      el.addEventListener("input", updateMarksTally);
+    });
+    updateMarksTally();
+
+    function renderPaper() {
+      if (!currentPaper) return;
+      const container = document.getElementById("paperContainer");
+      const topics = document.getElementById("topics").value;
+      const fm = fullMarksEl.value;
+      const lqm = Number(longQMarksEachEl.value) || 5;
+
+      let html = `
+        <div class="text-center border-b-2 border-slate-900 pb-4 mb-6">
+          <h2 class="text-xl sm:text-2xl font-bold">${currentPaper.boardHeader || ""}</h2>
+          <p class="text-lg font-semibold mt-1">শ্রেণি: ${currentPaper.classNameBengali || ""} | বিষয়: ${currentPaper.subjectBengali || ""}</p>
+          <p class="text-sm text-slate-600 mt-1">অধ্যায়: ${topics}</p>
+          <div class="flex justify-between items-center mt-4 text-sm sm:text-base font-semibold">
+            <span>সময়: ${currentPaper.timeAllowedBengali || "১ ঘণ্টা ৩০ মিনিট"}</span>
+            <span>পূর্ণমান: ${toBn(fm)}</span>
+          </div>
+        </div>
+      `;
+
+      if (currentPaper.mcqs && currentPaper.mcqs.length > 0) {
+        html += `
+          <section class="mb-8">
+            <div class="flex justify-between items-baseline font-bold text-base sm:text-lg mb-4 border-b border-slate-300 pb-1">
+              <h3>১। সঠিক উত্তরটি নির্বাচন করে লেখো (MCQ):</h3>
+              <span>১ × ${toBn(currentPaper.mcqs.length)} = ${toBn(currentPaper.mcqs.length)}</span>
+            </div>
+            <ol class="space-y-4">
+              ${currentPaper.mcqs.map((item, i) => `
+                <li class="leading-relaxed">
+                  <div class="font-medium">১.${toBn(i + 1)}${item.question}</div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1.5 pl-4 text-sm sm:text-base">
+                    ${(item.options || []).map((opt, oi) => `<div>(${optionLabels[oi] || oi + 1}) ${opt}</div>`).join("")}
+                  </div>
+                  ${showAnswers ? `<div class="mt-1 pl-4 text-xs font-semibold text-emerald-700">উত্তর: ${item.answer}</div>` : ""}
+                </li>
+              `).join("")}
+            </ol>
+          </section>
+        `;
+      }
+
+      if (currentPaper.fillInTheBlanks && currentPaper.fillInTheBlanks.length > 0) {
+        html += `
+          <section class="mb-8">
+            <div class="flex justify-between items-baseline font-bold text-base sm:text-lg mb-4 border-b border-slate-300 pb-1">
+              <h3>২। উপযুক্ত শব্দ বসিয়ে শূন্যস্থান পূরণ করো:</h3>
+              <span>১ × ${toBn(currentPaper.fillInTheBlanks.length)} = ${toBn(currentPaper.fillInTheBlanks.length)}</span>
+            </div>
+            <ol class="space-y-3">
+              ${currentPaper.fillInTheBlanks.map((item, i) => `
+                <li class="leading-relaxed">
+                  <div>২.${toBn(i + 1)} ${item.question}</div>${showAnswers ? `<div class="mt-0.5 pl-4 text-xs font-semibold text-emerald-700">উত্তর: ${item.answer}</div>` : ""}
+                </li>
+              `).join("")}
+            </ol>
+          </section>
+        `;
+      }
+
+      if (currentPaper.longQuestions && currentPaper.longQuestions.length > 0) {
+        html += `
+          <section class="mb-6">
+            <div class="flex justify-between items-baseline font-bold text-base sm:text-lg mb-4 border-b border-slate-300 pb-1">
+              <h3>৩। নিম্নলিখিত প্রশ্নগুলির বিস্তারিত উত্তর দাও:</h3>
+              <span>${toBn(lqm)} × ${toBn(currentPaper.longQuestions.length)} = ${toBn(lqm * currentPaper.longQuestions.length)}</span>
+            </div>
+            <ol class="space-y-4">
+              ${currentPaper.longQuestions.map((item, i) => `
+                <li class="leading-relaxed">
+                  <div class="flex justify-between items-start gap-4">
+                    <div>
+                      <span class="font-medium">৩.${toBn(i + 1)} ${item.question}</span>${item.orQuestion ? `<div class="mt-1 pl-6 text-slate-800"><span class="font-bold italic mr-2">[অথবা]</span>${item.orQuestion}</div>` : ""}
+                    </div>
+                    <span class="text-sm font-semibold whitespace-nowrap">[${toBn(item.marks || lqm)}]</span>
+                  </div>
+                  ${showAnswers ? `<div class="mt-1 pl-4 text-xs font-semibold text-emerald-700">উত্তর সংকেত: ${item.answerHint}</div>` : ""}
+                </li>
+              `).join("")}
+            </ol>
+          </section>
+        `;
+      }
+
+      container.innerHTML = html;
+      container.classList.remove("hidden");
+    }
+
+    document.getElementById("toggleAnswersBtn").addEventListener("click", (e) => {
+      showAnswers = !showAnswers;
+      e.target.textContent = showAnswers ? "উত্তর লুকান (Hide Answers)" : "উত্তরপত্র দেখুন (Answer Key)";
+      renderPaper();
+    });
+
+    document.getElementById("paperForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("generateBtn");
+      const errorBox = document.getElementById("errorBox");
+      btn.disabled = true;
+      btn.textContent = "প্রশ্নপত্র তৈরি হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন";
+      errorBox.classList.add("hidden");
+
+      try {
+        const res = await fetch("/api/generate-paper", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            selectedClass: Number(document.getElementById("selectedClass").value),
+            subject: document.getElementById("subject").value,
+            topics: document.getElementById("topics").value,
+            fullMarks: Number(fullMarksEl.value),
+            mcqCount: Number(mcqCountEl.value),
+            fillBlanksCount: Number(fillBlanksCountEl.value),
+            longQCount: Number(longQCountEl.value),
+            longQMarksEach: Number(longQMarksEachEl.value),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "প্রশ্নপত্র তৈরি করতে সমস্যা হয়েছে।");
+
+        currentPaper = data;
+        document.getElementById("paperActions").classList.remove("hidden");
+        renderPaper();
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "প্রশ্নপত্র তৈরি করুন (Generate Paper)";
+      }
+    });
+  </script>
+</body>
+</html>
