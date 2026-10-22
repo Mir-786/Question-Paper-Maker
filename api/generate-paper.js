@@ -9,7 +9,6 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  // Uses Vercel Environment Variable if available, otherwise uses your key directly
   const apiKey =
     process.env.GEMINI_API_KEY ||
     process.env.Gemini_API_Key ||
@@ -46,7 +45,7 @@ Match the exact terminology of West Bengal Board textbooks for Class ${selectedC
 `;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
