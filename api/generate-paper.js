@@ -4,6 +4,77 @@ function getBoardName(classNum) {
   return "পশ্চিমবঙ্গ উচ্চমাধ্যমিক শিক্ষা সংসদ (WBCHSE)";
 }
 
+async function callGeminiWithAutoModel(apiKey, payload) {
+  // Priority list of official Gemini model IDs
+  const candidateModels = [
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-flash-lite",
+  ];
+
+  // 1. Try candidate models in order
+  for (const modelName of candidateModels) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await res.json();
+    if (res.ok) {
+      return data;
+    }
+
+    const errMsg = data?.error?.message || "";
+    // If the error is NOT about the model name/availability, stop and throw it
+    if (
+      res.status !== 404 &&
+      !errMsg.includes("not found") &&
+      !errMsg.includes("no longer available") &&
+      !errMsg.includes("not supported")
+    ) {
+      throw new Error(errMsg || "Gemini API Error");
+    }
+  }
+
+  // 2. Fallback: Ask Google's ListModels API for an available model on this key
+  const listRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+  );
+  const listData = await listRes.json();
+
+  const availableModel = (listData.models || []).find(
+    (m) =>
+      m.name.includes("gemini") &&
+      (m.supportedGenerationMethods || []).includes("generateContent") &&
+      !m.name.includes("2.0") &&
+      !m.name.includes("1.5")
+  );
+
+  if (!availableModel) {
+    throw new Error("কোনো সক্রিয় Gemini মডেল পাওয়া যায়নি।");
+  }
+
+  const finalRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/${availableModel.name}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const finalData = await finalRes.json();
+  if (!finalRes.ok) {
+    throw new Error(finalData?.error?.message || "Gemini API Error");
+  }
+  return finalData;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -15,16 +86,19 @@ module.exports = async function handler(req, res) {
     "AIzaSyBw5HOOTsbRZdYIyygB7THOpMnUajdmAcI";
 
   try {
+    const body =
+      typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
+
     const {
-      selectedClass,
-      subject,
-      topics,
-      fullMarks,
-      mcqCount,
-      fillBlanksCount,
-      longQCount,
-      longQMarksEach,
-    } = req.body || {};
+      selectedClass = 10,
+      subject = "ভৌতবিজ্ঞান",
+      topics = "আলো",
+      fullMarks = 40,
+      mcqCount = 10,
+      fillBlanksCount = 10,
+      longQCount = 4,
+      longQMarksEach = 5,
+    } = body;
 
     const boardName = getBoardName(Number(selectedClass));
 
@@ -44,87 +118,79 @@ Details:
 Match the exact terminology of West Bengal Board textbooks for Class ${selectedClass}. Use Bengali numerals for marks and time.
 `;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                boardHeader: { type: "STRING" },
-                classNameBengali: { type: "STRING" },
-                subjectBengali: { type: "STRING" },
-                fullMarksBengali: { type: "STRING" },
-                timeAllowedBengali: { type: "STRING" },
-                mcqs: {
-                  type: "ARRAY",
-                  items: {
-                    type: "OBJECT",
-                    properties: {
-                      question: { type: "STRING" },
-                      options: { type: "ARRAY", items: { type: "STRING" } },
-                      answer: { type: "STRING" },
-                    },
-                    required: ["question", "options", "answer"],
-                  },
+    const payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.4,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            boardHeader: { type: "STRING" },
+            classNameBengali: { type: "STRING" },
+            subjectBengali: { type: "STRING" },
+            fullMarksBengali: { type: "STRING" },
+            timeAllowedBengali: { type: "STRING" },
+            mcqs: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  question: { type: "STRING" },
+                  options: { type: "ARRAY", items: { type: "STRING" } },
+                  answer: { type: "STRING" },
                 },
-                fillInTheBlanks: {
-                  type: "ARRAY",
-                  items: {
-                    type: "OBJECT",
-                    properties: {
-                      question: { type: "STRING" },
-                      answer: { type: "STRING" },
-                    },
-                    required: ["question", "answer"],
-                  },
-                },
-                longQuestions: {
-                  type: "ARRAY",
-                  items: {
-                    type: "OBJECT",
-                    properties: {
-                      question: { type: "STRING" },
-                      orQuestion: { type: "STRING" },
-                      marks: { type: "NUMBER" },
-                      answerHint: { type: "STRING" },
-                    },
-                    required: ["question", "marks", "answerHint"],
-                  },
-                },
+                required: ["question", "options", "answer"],
               },
-              required: [
-                "boardHeader",
-                "classNameBengali",
-                "subjectBengali",
-                "fullMarksBengali",
-                "timeAllowedBengali",
-                "mcqs",
-                "fillInTheBlanks",
-                "longQuestions",
-              ],
+            },
+            fillInTheBlanks: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  question: { type: "STRING" },
+                  answer: { type: "STRING" },
+                },
+                required: ["question", "answer"],
+              },
+            },
+            longQuestions: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  question: { type: "STRING" },
+                  orQuestion: { type: "STRING" },
+                  marks: { type: "NUMBER" },
+                  answerHint: { type: "STRING" },
+                },
+                required: ["question", "marks", "answerHint"],
+              },
             },
           },
-        }),
-      }
-    );
+          required: [
+            "boardHeader",
+            "classNameBengali",
+            "subjectBengali",
+            "fullMarksBengali",
+            "timeAllowedBengali",
+            "mcqs",
+            "fillInTheBlanks",
+            "longQuestions",
+          ],
+        },
+      },
+    };
 
-    const result = await response.json();
+    const result = await callGeminiWithAutoModel(apiKey, payload);
 
-    if (!response.ok) {
-      throw new Error(result.error?.message || "Gemini API Error");
-    }
-
-    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    let rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) {
-      throw new Error("AI থেকে কোনো উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।");
+      throw new Error("AI থেকে কোনো উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।");
     }
+
+    // Clean markdown code fences if present
+    rawText = rawText.replace(/```json|```/g, "").trim();
 
     const paperData = JSON.parse(rawText);
     return res.status(200).json(paperData);
