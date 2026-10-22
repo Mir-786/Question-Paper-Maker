@@ -47,7 +47,7 @@ Match the exact terminology of West Bengal Board textbooks for Class ${selectedC
 `;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${AIzaSyBw5HOOTsbRZdYIyygB7THOpMnUajdmAcI}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${AIzaSyBw5HOOTsbRZdYIyygB7THOpMnUajmAcI}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
