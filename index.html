@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>সাফল্য টিউশন সেন্টার - প্রশ্নপত্র নির্মাতা (Class 1-12)</title>
+  <title>সাফল্য টিউশন সেন্টার - প্রশ্নপত্র নির্মাতা (২০২৬ সিলেবাস)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Noto Serif Bengali -->
@@ -14,7 +14,6 @@
     body {
       font-family: 'Noto Serif Bengali', serif;
     }
-    /* Highlight editable paper when Edit Mode is active */
     .editing-active {
       outline: 2px dashed #4f46e5;
       background-color: #fefce8 !important;
@@ -52,17 +51,22 @@
   <!-- Control Panel (Hidden when printing PDF) -->
   <div class="max-w-4xl mx-auto no-print mb-6">
     <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-5 sm:p-8">
-      <div class="border-b border-slate-200 pb-4 mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-indigo-950">
-          সাফল্য টিউশন সেন্টার — প্রশ্নপত্র নির্মাতা
-        </h1>
-        <p class="text-slate-600 mt-1 text-sm sm:text-base">
-          Class 1–12 পশ্চিমবঙ্গ পর্ষদ সিলেবাস অনুযায়ী বাংলায় প্রশ্নপত্র তৈরি ও এডিট করুন
-        </p>
+      <div class="border-b border-slate-200 pb-4 mb-6 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-indigo-950">
+            সাফল্য টিউশন সেন্টার — প্রশ্নপত্র নির্মাতা
+          </h1>
+          <p class="text-slate-600 mt-1 text-sm sm:text-base">
+            ২০২৬ সালের পশ্চিমবঙ্গ পর্ষদ (WBBPE, WBBSE ও WBCHSE) নতুন সিলেবাস অনুযায়ী
+          </p>
+        </div>
+        <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1.5 rounded-full">
+          ২০২৬ সিলেবাস আপডেট
+        </span>
       </div>
 
       <form id="paperForm" class="space-y-4">
-        <!-- Institute Header & Exam Name -->
+        <!-- Institute Header & Exam Term -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">
@@ -77,15 +81,18 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">
-              পরীক্ষার নাম (Exam Subtitle)
+              পরীক্ষার ধরন / মূল্যায়ন (২০২৬ সিলেবাস)
             </label>
-            <input
+            <select
               id="examTitle"
-              type="text"
-              value="বার্ষিক মূল্যায়ন"
-              placeholder="যেমন: বার্ষিক মূল্যায়ন / মাসিক পরীক্ষা"
-              class="w-full rounded-lg border border-slate-300 px-3.5 py-2 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-            />
+              class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+            >
+              <option value="১ম পর্যায়ক্রমিক মূল্যায়ন - ২০২৬ (1st Summative)">১ম পর্যায়ক্রমিক মূল্যায়ন - ২০২৬ (1st Summative)</option>
+              <option value="২য় পর্যায়ক্রমিক মূল্যায়ন - ২০২৬ (2nd Summative)">২য় পর্যায়ক্রমিক মূল্যায়ন - ২০২৬ (2nd Summative)</option>
+              <option value="বার্ষিক মূল্যায়ন - ২০২৬ (3rd Summative / Final)" selected>বার্ষিক মূল্যায়ন - ২০২৬ (3rd Summative / Final)</option>
+              <option value="উচ্চমাধ্যমিক সেমিস্টার মূল্যায়ন - ২০২৬">উচ্চমাধ্যমিক সেমিস্টার মূল্যায়ন - ২০২৬</option>
+              <option value="মাসিক মূল্যায়ন পরীক্ষা - ২০২৬">মাসিক মূল্যায়ন পরীক্ষা - ২০২৬</option>
+            </select>
           </div>
         </div>
 
@@ -96,18 +103,18 @@
               শ্রেণি নির্বাচন করুন (Class 1 - 12)
             </label>
             <select id="selectedClass" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-              <option value="1">Class 1 (১ম শ্রেণি)</option>
-              <option value="2">Class 2 (২য় শ্রেণি)</option>
-              <option value="3">Class 3 (৩য় শ্রেণি)</option>
-              <option value="4">Class 4 (৪র্থ শ্রেণি)</option>
-              <option value="5">Class 5 (৫ম শ্রেণি)</option>
-              <option value="6">Class 6 (৬ষ্ঠ শ্রেণি)</option>
-              <option value="7">Class 7 (৭ম শ্রেণি)</option>
-              <option value="8">Class 8 (৮ম শ্রেণি)</option>
-              <option value="9">Class 9 (৯ম শ্রেণি)</option>
-              <option value="10" selected>Class 10 (১০ম শ্রেণি)</option>
-              <option value="11">Class 11 (১১শ শ্রেণি)</option>
-              <option value="12">Class 12 (১২শ শ্রেণি)</option>
+              <option value="1">Class 1 (১ম শ্রেণি - WBBPE)</option>
+              <option value="2">Class 2 (২য় শ্রেণি - WBBPE)</option>
+              <option value="3">Class 3 (৩য় শ্রেণি - WBBPE)</option>
+              <option value="4">Class 4 (৪র্থ শ্রেণি - WBBPE)</option>
+              <option value="5">Class 5 (৫ম শ্রেণি - WBBSE)</option>
+              <option value="6">Class 6 (৬ষ্ঠ শ্রেণি - WBBSE)</option>
+              <option value="7">Class 7 (৭ম শ্রেণি - WBBSE)</option>
+              <option value="8">Class 8 (৮ম শ্রেণি - WBBSE)</option>
+              <option value="9">Class 9 (৯ম শ্রেণি - WBBSE)</option>
+              <option value="10" selected>Class 10 (১০ম শ্রেণি - WBBSE)</option>
+              <option value="11">Class 11 (১১শ শ্রেণি - WBCHSE)</option>
+              <option value="12">Class 12 (১২শ শ্রেণি - WBCHSE)</option>
             </select>
           </div>
 
@@ -125,6 +132,8 @@
               <option value="ভূগোল (Geography)">ভূগোল (Geography)</option>
               <option value="পরিবেশ ও বিজ্ঞান (Environment & Science)">পরিবেশ ও বিজ্ঞান (Environment & Science)</option>
               <option value="আমাদের পরিবেশ (Amader Paribesh)">আমাদের পরিবেশ (Amader Paribesh)</option>
+              <option value="পাতাবাহার (বাংলা - প্রাথমিক)">পাতাবাহার (বাংলা - প্রাথমিক)</option>
+              <option value="আমার গণিত (প্রাথমিক)">আমার গণিত (প্রাথমিক)</option>
               <option value="পদার্থবিদ্যা (Physics)">পদার্থবিদ্যা (Physics - XI/XII)</option>
               <option value="রসায়ন (Chemistry)">রসায়ন (Chemistry - XI/XII)</option>
               <option value="জীববিদ্যা (Biology)">জীববিদ্যা (Biology - XI/XII)</option>
@@ -141,16 +150,25 @@
 
         <!-- Topics / Chapters Input -->
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1">
-            অধ্যায় বা বিষয়বস্তু (Topics / Chapters)
-          </label>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+            <label class="block text-sm font-semibold text-slate-700">
+              অধ্যায় বা বিষয়বস্তু (Topics / Chapters)
+            </label>
+            <button
+              type="button"
+              id="autoSyllabusBtn"
+              class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200"
+            >
+              ✨ ২০২৬ সালের সম্পূর্ণ সিলেবাস সেট করুন
+            </button>
+          </div>
           <textarea
             id="topics"
             rows="2"
             required
-            placeholder="যেমন: আলো, চলতড়িৎ, পর্যায় সারণি"
+            placeholder="নির্দিষ্ট অধ্যায়ের নাম লিখুন অথবা '২০২৬ সালের সিলেবাস অনুযায়ী সব অধ্যায়' রাখুন"
             class="w-full rounded-lg border border-slate-300 px-3.5 py-2 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-          >আলো, চলতড়িৎ, পর্যায় সারণি</textarea>
+          >২০২৬ সালের সিলেবাস অনুযায়ী সব অধ্যায়</textarea>
         </div>
 
         <!-- Marks & Question Counts -->
@@ -224,9 +242,9 @@
     </div>
   </div>
 
-  <!-- Edit Mode Helper Banner (Hidden when printing PDF) -->
+  <!-- Edit Mode Helper Banner -->
   <div id="editHelperBanner" class="hidden max-w-4xl mx-auto no-print mb-3 bg-amber-50 border border-amber-300 text-amber-900 px-4 py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-between">
-    <span>💡 <strong>এডিট অপশন চালু:</strong> নিচের প্রশ্নপত্রের যেকোনো লেখার ওপর ট্যাপ করে সরাসরি পরিবর্তন, সংযোজন বা মুছে ফেলতে পারবেন। (এই বার্তাটি PDF-এ আসবে না)</span>
+    <span>💡 <strong>এডিট অপশন চালু:</strong> নিচের প্রশ্নপত্রের যেকোনো লেখার ওপর ট্যাপ করে সরাসরি পরিবর্তন বা মুছে ফেলতে পারবেন। (এই বার্তাটি PDF-এ আসবে না)</span>
   </div>
 
   <!-- Printable & Editable Question Paper Container -->
@@ -244,6 +262,7 @@
 
     const instituteNameEl = document.getElementById("instituteName");
     const examTitleEl = document.getElementById("examTitle");
+    const topicsEl = document.getElementById("topics");
     const fullMarksEl = document.getElementById("fullMarks");
     const mcqCountEl = document.getElementById("mcqCount");
     const fillBlanksCountEl = document.getElementById("fillBlanksCount");
@@ -258,6 +277,10 @@
     let currentPaper = null;
     let showAnswers = false;
     let isEditable = true;
+
+    document.getElementById("autoSyllabusBtn").addEventListener("click", () => {
+      topicsEl.value = "২০২৬ সালের সিলেবাস অনুযায়ী সব অধ্যায়";
+    });
 
     function updateMarksTally() {
       const fm = Number(fullMarksEl.value) || 0;
@@ -289,18 +312,18 @@
 
     function renderPaper() {
       if (!currentPaper) return;
-      const topics = document.getElementById("topics").value;
+      const topics = topicsEl.value;
       const fm = fullMarksEl.value;
       const lqm = Number(longQMarksEachEl.value) || 5;
       const headerName = instituteNameEl.value.trim() || "সাফল্য টিউশন সেন্টার";
-      const examSubtitle = examTitleEl.value.trim();
+      const examSubtitle = examTitleEl.value.replace(/\s*\(.*?\)\s*/g, "").trim();
 
       let html = `
         <div class="text-center border-b-2 border-slate-900 pb-2.5 mb-4">
           <h2 class="text-xl sm:text-2xl font-bold">${headerName}</h2>
           ${examSubtitle ? `<p class="text-base sm:text-lg font-semibold mt-0.5">${examSubtitle}</p>` : ""}
           <p class="text-sm sm:text-base font-semibold mt-0.5">শ্রেণি: ${currentPaper.classNameBengali || ""} | বিষয়: ${currentPaper.subjectBengali || ""}</p>
-          <p class="text-xs sm:text-sm text-slate-700 mt-0.5">অধ্যায়: ${topics}</p>
+          <p class="text-xs sm:text-sm text-slate-700 mt-0.5">পাঠ্যসূচি: ${topics}</p>
           <div class="flex justify-between items-center mt-2 text-sm sm:text-base font-semibold">
             <span>সময়: ${currentPaper.timeAllowedBengali || "১ ঘণ্টা ৩০ মিনিট"}</span>
             <span>পূর্ণমান: ${toBn(fm)}</span>
@@ -318,7 +341,7 @@
             <ol class="space-y-2.5 text-sm sm:text-base">
               ${currentPaper.mcqs.map((item, i) => `
                 <li class="leading-snug">
-                  <div class="font-medium">১.${toBn(i + 1)}${item.question}</div>
+                  <div class="font-medium">১.${toBn(i + 1)} ${item.question}</div>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1 pl-4 text-sm">
                     ${(item.options || []).map((opt, oi) => `<div>(${optionLabels[oi] || oi + 1}) ${opt}</div>`).join("")}
                   </div>
@@ -340,7 +363,7 @@
             <ol class="space-y-2 text-sm sm:text-base">
               ${currentPaper.fillInTheBlanks.map((item, i) => `
                 <li class="leading-snug">
-                  <div>২.${toBn(i + 1)}${item.question}</div>
+                  <div>২.${toBn(i + 1)} ${item.question}</div>
                   <div class="answer-key-item ${showAnswers ? "" : "hidden"} mt-0.5 pl-4 text-xs font-semibold text-emerald-700">উত্তর: ${item.answer}</div>
                 </li>
               `).join("")}
@@ -361,7 +384,8 @@
                 <li class="leading-snug">
                   <div class="flex justify-between items-start gap-3">
                     <div>
-                      <span class="font-medium">৩.${toBn(i + 1)} ${item.question}</span>${item.orQuestion ? `<div class="mt-0.5 pl-5 text-slate-800"><span class="font-bold italic mr-1.5">[অথবা]</span>${item.orQuestion}</div>` : ""}
+                      <span class="font-medium">৩.${toBn(i + 1)} ${item.question}</span>
+                      ${item.orQuestion ? `<div class="mt-0.5 pl-5 text-slate-800"><span class="font-bold italic mr-1.5">[অথবা]</span>${item.orQuestion}</div>` : ""}
                     </div>
                     <span class="text-sm font-semibold whitespace-nowrap">[${toBn(item.marks || lqm)}]</span>
                   </div>
@@ -378,7 +402,6 @@
       editHelperBanner.classList.remove("hidden");
     }
 
-    // Toggle Edit Mode without losing manual changes
     document.getElementById("toggleEditBtn").addEventListener("click", (e) => {
       isEditable = !isEditable;
       paperContainer.contentEditable = isEditable ? "true" : "false";
@@ -395,7 +418,6 @@
       }
     });
 
-    // Toggle Answer Key without overwriting manual edits
     document.getElementById("toggleAnswersBtn").addEventListener("click", (e) => {
       showAnswers = !showAnswers;
       e.target.textContent = showAnswers ? "উত্তর লুকান (Hide Answers)" : "উত্তরপত্র দেখুন (Answer Key)";
@@ -409,7 +431,7 @@
       const btn = document.getElementById("generateBtn");
       const errorBox = document.getElementById("errorBox");
       btn.disabled = true;
-      btn.textContent = "প্রশ্নপত্র তৈরি হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন";
+      btn.textContent = "২০২৬ সিলেবাস অনুযায়ী প্রশ্নপত্র তৈরি হচ্ছে...";
       errorBox.classList.add("hidden");
 
       try {
@@ -419,7 +441,8 @@
           body: JSON.stringify({
             selectedClass: Number(document.getElementById("selectedClass").value),
             subject: document.getElementById("subject").value,
-            topics: document.getElementById("topics").value,
+            examTitle: examTitleEl.value,
+            topics: topicsEl.value,
             fullMarks: Number(fullMarksEl.value),
             mcqCount: Number(mcqCountEl.value),
             fillBlanksCount: Number(fillBlanksCountEl.value),

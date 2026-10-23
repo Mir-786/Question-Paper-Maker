@@ -1,11 +1,25 @@
-function getBoardName(classNum) {
-  if (classNum <= 4) return "পশ্চিমবঙ্গ প্রাথমিক শিক্ষা পর্ষদ (WBBPE)";
-  if (classNum <= 10) return "পশ্চিমবঙ্গ মধ্যশিক্ষা পর্ষদ (WBBSE)";
-  return "পশ্চিমবঙ্গ উচ্চমাধ্যমিক শিক্ষা সংসদ (WBCHSE)";
+function getBoardDetails(classNum) {
+  if (classNum <= 4) {
+    return {
+      board: "পশ্চিমবঙ্গ প্রাথমিক শিক্ষা পর্ষদ (WBBPE)",
+      books: "পাতাবাহার, আমার গণিত, আমাদের পরিবেশ (২০২৬ সালের বর্তমান সিলেবাস)",
+    };
+  }
+  if (classNum <= 10) {
+    return {
+      board: "পশ্চিমবঙ্গ মধ্যশিক্ষা পর্ষদ (WBBSE)",
+      books:
+        "সাহিত্য মেলা / সাহিত্য সঞ্চয়ন, গণিত প্রকাশ, পরিবেশ ও বিজ্ঞান, ভৌতবিজ্ঞান, জীবনবিজ্ঞান, অতীত ও ঐতিহ্য (ইতিহাস), আমাদের পৃথিবী / ভারত ও পৃথিবী (ভূগোল) — ২০২৬ সালের মধ্যশিক্ষা পর্ষদের বর্তমান সিলেবাস",
+    };
+  }
+  return {
+    board: "পশ্চিমবঙ্গ উচ্চমাধ্যমিক শিক্ষা সংসদ (WBCHSE)",
+    books:
+      "WBCHSE ২০২৬ সালের নতুন উচ্চমাধ্যমিক সিলেবাস ও সেমিস্টার/বার্ষিক পাঠ্যক্রম",
+  };
 }
 
 async function callGeminiWithAutoModel(apiKey, payload) {
-  // Priority list of official Gemini model IDs
   const candidateModels = [
     "gemini-3-flash-preview",
     "gemini-2.5-flash",
@@ -13,7 +27,6 @@ async function callGeminiWithAutoModel(apiKey, payload) {
     "gemini-2.5-flash-lite",
   ];
 
-  // 1. Try candidate models in order
   for (const modelName of candidateModels) {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
@@ -30,7 +43,6 @@ async function callGeminiWithAutoModel(apiKey, payload) {
     }
 
     const errMsg = data?.error?.message || "";
-    // If the error is NOT about the model name/availability, stop and throw it
     if (
       res.status !== 404 &&
       !errMsg.includes("not found") &&
@@ -41,7 +53,6 @@ async function callGeminiWithAutoModel(apiKey, payload) {
     }
   }
 
-  // 2. Fallback: Ask Google's ListModels API for an available model on this key
   const listRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
   );
@@ -92,7 +103,8 @@ module.exports = async function handler(req, res) {
     const {
       selectedClass = 10,
       subject = "ভৌতবিজ্ঞান",
-      topics = "আলো",
+      examTitle = "বার্ষিক মূল্যায়ন - ২০২৬",
+      topics = "২০২৬ সালের সিলেবাস অনুযায়ী",
       fullMarks = 40,
       mcqCount = 10,
       fillBlanksCount = 10,
@@ -100,28 +112,34 @@ module.exports = async function handler(req, res) {
       longQMarksEach = 5,
     } = body;
 
-    const boardName = getBoardName(Number(selectedClass));
+    const { board, books } = getBoardDetails(Number(selectedClass));
 
     const prompt = `
-You are an expert West Bengal Board question paper setter.
-Create a complete, authentic question paper strictly in the BENGALI language (বাংলা লিপি) following the syllabus and standard of ${boardName}.
+You are an expert West Bengal Board teacher and question paper setter for the current academic year 2026.
+Create a complete, authentic question paper strictly in the BENGALI language (বাংলা লিপি) following the LATEST 2026 official syllabus of ${board}.
 
-Details:
+ Official Textbook & Syllabus Reference:
+- Standard Textbooks to follow: ${books}
 - Class: Class ${selectedClass}
 - Subject: ${subject}
-- Topics / Chapters to cover: ${topics}
-- Total Full Marks: ${fullMarks}
-- Section A (MCQ): Generate exactly ${mcqCount} questions (1 mark each). Each must have 4 options in Bengali.
-- Section B (Fill in the Blanks): Generate exactly ${fillBlanksCount} questions (1 mark each) containing "________".
-- Section C (Long / Descriptive Questions): Generate exactly ${longQCount} questions (${longQMarksEach} marks each). Include an alternative question ('orQuestion') where appropriate.
+- Exam Term / Evaluation: ${examTitle}
+- Topics / Chapters to cover: ${topics} (If the user specified "২০২৬ সালের সিলেবাস অনুযায়ী" or left it general, automatically select the exact chapters prescribed in the 2026 ${board} syllabus for Class ${selectedClass} ${subject} under ${examTitle}).
 
-Match the exact terminology of West Bengal Board textbooks for Class ${selectedClass}. Use Bengali numerals for marks and time.
+Question Paper Structure (Total Marks: ${fullMarks}):
+- Section A (MCQ - সঠিক উত্তরটি নির্বাচন করো): Generate exactly ${mcqCount} questions (1 mark each). Each question must have 4 realistic options in Bengali.
+- Section B (Fill in the Blanks - শূন্যস্থান পূরণ করো): Generate exactly ${fillBlanksCount} questions (1 mark each) containing "________".
+- Section C (Long / Descriptive Questions - রচনামূলক প্রশ্ন): Generate exactly ${longQCount} questions (${longQMarksEach} marks each). Include an internal choice ('orQuestion') from the 2026 syllabus where appropriate.
+
+Strict Guidelines:
+1. Do NOT ask out-of-syllabus questions. Stick 100% to the current 2026 West Bengal government school curriculum for Class ${selectedClass}.
+2. Use authentic Bengali terminology as printed in West Bengal Board textbooks.
+3. Use Bengali digits (০-৯) for fullMarksBengali and timeAllowedBengali.
 `;
 
     const payload = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.4,
+        temperature: 0.35,
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
@@ -189,7 +207,6 @@ Match the exact terminology of West Bengal Board textbooks for Class ${selectedC
       throw new Error("AI থেকে কোনো উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।");
     }
 
-    // Clean markdown code fences if present
     rawText = rawText.replace(/```json|```/g, "").trim();
 
     const paperData = JSON.parse(rawText);
