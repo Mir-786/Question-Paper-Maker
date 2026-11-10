@@ -40,18 +40,97 @@ body.preview-mode .preview-exit{display:block!important;position:fixed;right:16p
 @media(max-width:700px){body.preview-mode main{padding:8px 0}body.preview-mode .paper{width:100%;min-height:0;padding:8mm 7mm;box-shadow:none}}
 @media(max-width:850px){.layout{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line);padding:10px}.side-title,.project-list{display:none}.side-actions{display:flex}.nav{display:inline-flex;padding:8px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}main{padding:14px}.paper{padding:25px 18px}.topline{align-items:flex-start;flex-direction:column}.headright{display:none}}
 @media print{@page{size:A4;margin:10mm 15mm}@page:first{margin-top:calc(8mm + 2px)}body{background:#fff}.no-print,header,aside,.topline,.card.config,.toolbar,.qtools,.add-inline,.toast{display:none!important}.layout{display:block}main{padding:0;max-width:none}.paper{border:0;box-shadow:none;max-width:none;margin:0;padding:0;min-height:0}.question{border:0!important;background:#fff!important;break-inside:avoid;padding:5px 0}.qbody{outline:0!important}.section-title{break-after:avoid}.paper-head{margin-top:0}}
+
+.login-gate{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0f172a,#1e3a8a);display:flex;align-items:center;justify-content:center;padding:18px}
+.login-box{width:min(420px,100%);background:#fff;border-radius:18px;padding:28px;box-shadow:0 24px 70px #0005}
+.login-box h2{margin:0 0 6px;color:#0f172a}.login-box .muted{margin-bottom:20px}
+.login-box input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:9px;margin:7px 0 14px}
+.login-box button{width:100%;background:#2563eb;color:white;border:0;padding:12px;border-radius:9px;font-weight:700;cursor:pointer}
+#loginError{color:#dc2626;font-size:13px;min-height:18px;margin:4px 0 10px}
+
+.side-actions button{width:100%;text-align:left;display:flex;align-items:center;gap:9px;min-height:42px;border-radius:9px}
+.side-actions button.secondary{background:#f8fafc!important;color:#334155!important;border:1px solid #e2e8f0!important}
+.side-actions button.secondary:hover{background:#eaf1ff!important;color:#1d4ed8!important}
+
+.menu-toggle{display:block;width:100%;padding:11px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#1e293b;font-weight:700;text-align:left}
+.menu-toggle span{float:right}
+.side-menu-panel{display:grid;gap:7px;margin:8px 4px 12px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px}
+.side-menu-panel button{width:100%;padding:10px 12px;border:0;border-radius:8px;background:#fff;color:#334155;text-align:left;font-weight:600}
+.side-menu-panel button:hover{background:#eaf1ff;color:#1d4ed8}
+@media(max-width:850px){
+ .layout{display:flex;flex-direction:column;min-height:calc(100vh - 58px)}
+ aside{position:sticky;top:0;z-index:100;padding:8px 10px!important;border-right:0;border-bottom:1px solid var(--line);box-shadow:0 2px 8px #0f172a0a}
+ aside>.side-title,aside>.project-list,aside>div[style*="margin:22px"]{display:none!important}
+ .menu-toggle{display:block}
+ .side-menu-panel{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .side-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 2px}
+ .side-actions button{justify-content:center;text-align:center;min-height:40px;padding:8px 5px;font-size:12px;white-space:normal}
+ main{padding:12px!important;max-width:100%;overflow-x:hidden}
+ .grid{grid-template-columns:minmax(0,1fr)!important}
+ .paper{width:100%;max-width:100%;box-sizing:border-box;padding:20px 14px!important;overflow-wrap:anywhere}
+ .topline{gap:10px}
+ .topline .actions{display:flex;flex-wrap:wrap;gap:6px}
+ .topline .actions button{flex:1 1 auto}
+ header{height:auto;min-height:54px;padding:9px 12px;gap:8px;flex-wrap:wrap}
+ .brand{font-size:15px}
+ .headright{display:flex!important;font-size:10px;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+}
+@media(max-width:480px){
+ .side-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ main{padding:9px!important}
+ .paper{padding:16px 10px!important}
+ .headright #saveStatus{display:none}
+ .login-box{padding:22px}
+}
+
+.history-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.history-filter{border:1px solid #cbd5e1;background:#fff;color:#475569;padding:8px 16px;border-radius:20px;font-weight:700;cursor:pointer}
+.history-filter.active{background:#2563eb;border-color:#2563eb;color:#fff}
+.mobile-menu-trigger{display:none;border:0;background:#1e293b;color:#fff;border-radius:8px;padding:8px 11px;font-size:18px}
+@media(max-width:850px){
+ .mobile-menu-trigger{display:inline-flex;align-items:center;justify-content:center}
+ header{display:flex;align-items:center}
+ aside{position:fixed!important;left:0;top:0;bottom:0;width:min(300px,82vw);z-index:1001;overflow-y:auto;transform:translateX(-105%);transition:transform .28s ease;box-shadow:8px 0 30px #0f172a20;border-right:1px solid var(--line)!important;border-bottom:0!important}
+ body.menu-open aside{transform:translateX(0)}
+ body.menu-open:after{content:"";position:fixed;inset:0;background:#0f172a66;z-index:1000}
+ aside>.side-title,aside>.project-list,aside>div[style*="margin:22px"]{display:block!important}
+ .side-actions{display:grid!important;grid-template-columns:1fr!important}
+ .side-actions button{justify-content:flex-start!important;text-align:left!important;font-size:14px!important;padding:10px 12px!important}
+ .layout{display:block!important;min-height:calc(100vh - 58px)}
+ main{padding:12px!important}
+}
 </style>
 </head>
 <body>
-<header><div class="brand"><span class="logo">QP</span> Question Paper Studio</div><div class="headright"><span id="saveStatus">● Local autosave enabled</span><span>Autosave: 20 sec</span></div></header>
+<div id="loginGate" class="login-gate">
+ <div class="login-box">
+  <div style="font-size:34px;text-align:center;margin-bottom:8px">📘</div>
+  <h2 style="text-align:center">Question Paper Studio</h2>
+  <div class="muted" style="text-align:center">Sign in to continue</div>
+  <form onsubmit="event.preventDefault();loginLocal()">
+   <label for="loginUsername">Username</label>
+   <input id="loginUsername" autocomplete="username" placeholder="Enter username" required>
+   <label for="loginPassword">Password</label>
+   <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" required>
+   <div id="loginError"></div><button type="submit">Login</button>
+  </form>
+ </div>
+</div>
+<header><button class="mobile-menu-trigger" onclick="toggleSideMenu()" aria-label="Open menu">☰</button><div class="brand"><span class="logo">QP</span> Question Paper Studio</div><div class="headright"><span id="saveStatus">● Local autosave enabled</span><span>Autosave: 20 sec</span><span style="padding:6px 10px;border-radius:18px;background:#334155;color:#fff">👤 <b id="loggedInUser">User</b></span></div></header>
 <div class="layout">
 <aside class="no-print">
-  <div class="side-actions"><button onclick="newProject()">＋ New Project</button><button class="secondary" onclick="showView('editor')">✎ Editor</button><button class="secondary" onclick="showView('history')">◷ Project History</button></div>
+  <div class="side-title">MENU</div>
+  <button class="menu-toggle" onclick="toggleSideMenu()" aria-expanded="false">☰ Menu <span>⌄</span></button>
+  <div id="sideMenuPanel" class="side-menu-panel hidden">
+   <button onclick="showServerConnection();closeSideMenu()">☁ Supabase Connect</button>
+   <button onclick="closeSideMenu();logoutLocal()">↪ Logout</button>
+  </div>
+  <div class="side-actions"><button onclick="closeSideMenu();newProject()">＋ New Project</button><button class="secondary" onclick="closeSideMenu();showView('editor')">✎ Editor</button><button class="secondary" onclick="closeSideMenu();showView('history')">◷ Project History</button></div>
   <div class="side-title">RECENT PROJECTS</div><div id="projectList" class="project-list"></div>
   <div style="margin:22px 8px;color:#94a3b8;font-size:11px">Your projects are saved in this browser on this device.</div>
 </aside>
 <main>
- <section class="card no-print" id="supabaseConnectCard" style="margin-bottom:18px">
+ <section class="card no-print hidden" id="supabaseConnectCard" style="margin-bottom:18px">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
    <div><h3 style="margin:0">☁ Supabase Server Connection</h3><div class="muted">Connect this Question Paper Studio to your Supabase project.</div></div>
    <span id="sbStatus" class="badge" style="padding:6px 10px;border-radius:20px;background:#f1f5f9;color:#475569">Not connected</span>
@@ -124,6 +203,31 @@ body.preview-mode .preview-exit{display:block!important;position:fixed;right:16p
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const KEY='questionPaperStudio_v1';
+// Edit these local credentials in this HTML file before use.
+// WARNING: anyone with the HTML source can read these credentials.
+const LOCAL_ACCOUNTS=[
+ {username:'miraj',password:'mir159'},
+ {username:'moyna',password:'moyna786'},
+ {username:'abida',password:'abida321'}
+];
+function loginLocal(){
+ const u=$('loginUsername').value.trim(), pw=$('loginPassword').value;
+ if(!LOCAL_ACCOUNTS.some(a=>a.username===u&&a.password===pw)){
+  $('loginError').textContent='Incorrect username or password';return;
+ }
+ sessionStorage.setItem('qps_local_logged_in','1');
+ sessionStorage.setItem('qps_local_username',u);
+ $('loginGate').style.display='none';
+ const who=$('loggedInUser');if(who)who.textContent=u;
+}
+function logoutLocal(){sessionStorage.removeItem('qps_local_logged_in');$('loginGate').style.display='flex';$('loginPassword').value='';}
+function initLocalLogin(){
+ if(sessionStorage.getItem('qps_local_logged_in')==='1'){
+  $('loginGate').style.display='none';
+  const who=$('loggedInUser');if(who)who.textContent=sessionStorage.getItem('qps_local_username')||'User';
+ }
+}
+
 
 const SB_CONFIG_KEY='qps_supabase_config_v1';
 let sbClient=null;
@@ -181,7 +285,7 @@ create policy "Owners can delete own papers" on public.question_papers for delet
 let projects=[],currentId=null,activeView='editor',saveTimer=null;
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-function blankProject(){return{id:uid(),name:'Untitled question paper',created:Date.now(),updated:Date.now(),meta:{language:'bn',institution:'সাফল্য টিউশন সেন্টার',examName:'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন',subject:'',className:'',duration:'',fullMarks:'',examDate:'',session:''},sections:[]}}
+function blankProject(){return{id:uid(),name:'Untitled question paper',created:Date.now(),updated:Date.now(),createdBy:sessionStorage.getItem('qps_local_username')||'unknown',meta:{language:'bn',institution:'সাফল্য টিউশন সেন্টার',examName:'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন',subject:'',className:'',duration:'',fullMarks:'',examDate:'',session:''},sections:[]}}
 function loadAll(){try{projects=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){projects=[]}projects.forEach(p=>{p.meta=p.meta||{};if(!p.meta.language)p.meta.language='bn';if(!p.meta.institution)p.meta.institution=p.meta.language==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName)p.meta.examName=p.meta.language==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';if(p.meta.session===undefined)p.meta.session=''});if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;persist()}else currentId=projects[0].id;renderProjectList();openProject(currentId)}
 function persist(){localStorage.setItem(KEY,JSON.stringify(projects));renderProjectList()}
 function current(){return projects.find(p=>p.id===currentId)}
@@ -193,10 +297,45 @@ function updateMeta(){const p=current();if(!p)return;p.meta={...p.meta,language:
 function renderMeta(){const m=current()?.meta||{},en=m.language==='en';$('pInstitution').textContent=m.institution||(en?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার');$('pExamName').textContent=m.examName||(en?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন');$('pSubject').textContent=(en?'SUB- ':'বিষয়: ')+(m.subject||'—');$('pClass').textContent=(en?'Class - ':'শ্রেণি - ')+(m.className||'—');$('pDuration').textContent=(en?'TIME- ':'সময়- ')+(m.duration||'—');$('pMarks').textContent=(en?'F.M- ':'পূর্ণমান- ')+(m.fullMarks||'—');$('pSession').textContent=(en?'Session - ':'শিক্ষাবর্ষ - ')+(m.session||'—');$('pNameLabel').firstChild.textContent=en?'Name ':'নাম ';$('pRollLabel').firstChild.textContent=en?'Roll ':'রোল ';$('lblInstitution').textContent=en?'Institution / School name':'প্রতিষ্ঠানের নাম';$('lblExamName').textContent=en?'Exam name':'পরীক্ষার নাম';$('lblSubject').textContent=en?'Subject':'বিষয়';$('lblClass').textContent=en?'Class':'শ্রেণি';$('lblDuration').textContent=en?'Time':'সময়';$('lblMarks').textContent=en?'Full marks':'পূর্ণমান';$('lblDate').textContent=en?'Exam date':'পরীক্ষার তারিখ';$('lblSession').textContent=en?'Session':'শিক্ষাবর্ষ';$('typeSelect').querySelector('option[value="MCQ"]').textContent=en?'Multiple Choice Questions (MCQ)':'বহুনির্বাচনী প্রশ্ন (MCQ)';$('typeSelect').querySelector('option[value="FILL"]').textContent=en?'Fill in the blanks':'শূন্যস্থান পূরণ';$('typeSelect').querySelector('option[value="TRUE"]').textContent=en?'True / False':'সত্য / মিথ্যা';$('typeSelect').querySelector('option[value="VERY_SHORT"]').textContent=en?'Very short questions':'অতি সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="SHORT"]').textContent=en?'Short questions':'সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="LONG"]').textContent=en?'Long / descriptive questions':'দীর্ঘ / রচনামূলক প্রশ্ন';}
 function changePaperLanguage(lang){const p=current();if(!p)return;const wasDefaultBn=p.meta.institution==='সাফল্য টিউশন সেন্টার'||!p.meta.institution;const wasDefaultEn=p.meta.institution==='Safollo Tuition Center';p.meta.language=lang;if(wasDefaultBn||wasDefaultEn)p.meta.institution=lang==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName||p.meta.examName==='তৃতীয় পর্যায়ক্রমিক মূল্যায়ন'||p.meta.examName==='3rd Summative Evaluation')p.meta.examName=lang==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';openProject(p.id);scheduleSave();}
 function openProject(id){const p=projects.find(x=>x.id===id);if(!p)return;currentId=id;$('projectName').value=p.name;$('paperLanguage').value=p.meta.language||'bn';$('institution').value=p.meta.institution||'';$('examName').value=p.meta.examName||'';$('subject').value=p.meta.subject||'';$('className').value=p.meta.className||'';$('duration').value=p.meta.duration||'';$('fullMarks').value=p.meta.fullMarks||'';$('examDate').value=p.meta.examDate||'';$('session').value=p.meta.session||'';renderMeta();renderSections();showView('editor');renderProjectList()}
-function newProject(){const p=blankProject();projects.unshift(p);currentId=p.id;persist();openProject(p.id);toast('New project created')}
-function showView(view){activeView=view;$('editorView').classList.toggle('hidden',view!=='editor');$('historyView').classList.toggle('hidden',view!=='history');if(view==='history')renderHistory();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
+function newProject(){const p=blankProject();p.createdBy=sessionStorage.getItem('qps_local_username')||'unknown';projects.unshift(p);currentId=p.id;persist();openProject(p.id);toast('New project created')}
+function showView(view){activeView=view;$('supabaseConnectCard').classList.add('hidden');$('editorView').classList.toggle('hidden',view!=='editor');$('historyView').classList.toggle('hidden',view!=='history');if(view==='history')renderHistory();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
+function toggleSideMenu(){
+ const panel=$('sideMenuPanel');
+ const btn=document.querySelector('.menu-toggle');
+ const isOpen=panel && !panel.classList.contains('hidden');
+ if(panel)panel.classList.toggle('hidden',isOpen);
+ document.body.classList.toggle('menu-open',!isOpen);
+ if(btn)btn.setAttribute('aria-expanded',String(!isOpen));
+ const mobileBtn=document.querySelector('.mobile-menu-trigger');
+ if(mobileBtn)mobileBtn.setAttribute('aria-expanded',String(!isOpen));
+}
+function closeSideMenu(){
+ const panel=$('sideMenuPanel');
+ if(panel)panel.classList.add('hidden');
+ document.body.classList.remove('menu-open');
+ const btn=document.querySelector('.menu-toggle');
+ if(btn)btn.setAttribute('aria-expanded','false');
+ const mobileBtn=document.querySelector('.mobile-menu-trigger');
+ if(mobileBtn)mobileBtn.setAttribute('aria-expanded','false');
+}
+// Close the slide menu when the user taps/clicks anywhere outside the menu.
+document.addEventListener('click',function(event){
+ if(!document.body.classList.contains('menu-open'))return;
+ const aside=document.querySelector('aside');
+ const trigger=document.querySelector('.mobile-menu-trigger');
+ if(aside && !aside.contains(event.target) && !(trigger && trigger.contains(event.target)))closeSideMenu();
+});
+function showServerConnection(){activeView='server';$('editorView').classList.add('hidden');$('historyView').classList.add('hidden');$('supabaseConnectCard').classList.remove('hidden');document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));}
 function renderProjectList(){$('projectList').innerHTML=projects.slice().sort((a,b)=>b.updated-a.updated).map(p=>`<div class="project-item ${p.id===currentId?'active':''}" onclick="openProject('${p.id}')">${esc(p.name)}</div>`).join('')}
-function renderHistory(){$('historyList').innerHTML=projects.slice().sort((a,b)=>b.updated-a.updated).map(p=>`<div class="history-row"><div><strong>${esc(p.name)}</strong><div class="muted">${esc(p.meta.subject||'No subject')} · ${p.sections.reduce((n,s)=>n+s.questions.length,0)} questions · Last edited ${new Date(p.updated).toLocaleString()}</div></div><div class="actions"><button class="secondary" onclick="openProject('${p.id}')">Open & edit</button><button class="danger" onclick="deleteProject('${p.id}')">মুছুন</button></div></div>`).join('')||'<div class="empty">No project history yet.</div>'}
+let historyOwnerFilter='all';
+function setHistoryFilter(owner){historyOwnerFilter=owner;renderHistory()}
+function renderHistory(){
+ const filters=[['all','All'],['miraj','miraj'],['moyna','moyna'],['abida','abida']];
+ const rows=projects.slice().sort((a,b)=>b.updated-a.updated).filter(p=>historyOwnerFilter==='all'||(p.createdBy||'unknown')===historyOwnerFilter);
+ const tabs=filters.map(([key,label])=>`<button class="history-filter ${historyOwnerFilter===key?'active':''}" onclick="setHistoryFilter('${key}')">${label}</button>`).join('');
+ const cards=rows.map(p=>`<div class="history-row"><div><strong>${esc(p.name)}</strong><div class="muted">${esc(p.meta.subject||'No subject')} · ${p.sections.reduce((n,s)=>n+s.questions.length,0)} questions · Created by ${esc(p.createdBy||'unknown')} · Last edited ${new Date(p.updated).toLocaleString()}</div></div><div class="actions"><button class="secondary" onclick="openProject('${p.id}')">Open & edit</button><button class="danger" onclick="deleteProject('${p.id}')">মুছুন</button></div></div>`).join('');
+ $('historyList').innerHTML=`<div class="history-filters">${tabs}</div>${cards||'<div class="empty">No project history for this user.</div>'}`;
+}
 function deleteProject(id){if(!confirm('Delete this project permanently?'))return;projects=projects.filter(p=>p.id!==id);if(!projects.length){const p=blankProject();projects=[p]}currentId=projects[0].id;persist();openProject(currentId);renderHistory()}
 function generateSection(){const p=current(),type=$('typeSelect').value,count=Math.max(1,Math.min(100,parseInt($('countInput').value)||1)),marks=parseFloat($('marksInput').value)||0;const titles={MCQ:'বহুনির্বাচনী প্রশ্ন (MCQ)',SHORT:'সংক্ষিপ্ত প্রশ্ন',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন',LONG:'দীর্ঘ / রচনামূলক প্রশ্ন',FILL:'শূন্যস্থান পূরণ',TRUE:'সত্য / মিথ্যা'};const section={id:uid(),type,title:titles[type],marks,questions:[]};for(let i=0;i<count;i++)section.questions.push({id:uid(),text:'',options:type==='MCQ'?['','','','']:null});p.sections.push(section);renderSections();scheduleSave();toast(count+'টি প্রশ্ন যোগ করা হয়েছে')}
 function renderSections(){const p=current();if(!p)return;const root=$('sections');if(!p.sections.length){root.innerHTML='<div class="empty">এখনও কোনো প্রশ্ন যোগ করা হয়নি। উপরে থেকে প্রশ্নের ধরন নির্বাচন করে বিভাগ যোগ করুন।</div>';return}root.innerHTML=p.sections.map((s,si)=>{const total=s.questions.length*s.marks;const en=current()?.meta?.language==='en';const typeLabels=en?{MCQ:'Choose the correct answer:',FILL:'Fill in the blanks:',TRUE:'Write True or False:',VERY_SHORT:'Answer the following very short questions:',SHORT:'Answer the following short questions:',LONG:'Answer the following long questions:'}:{MCQ:'সঠিক বিকল্পটি নির্বাচন করো:',FILL:'শূন্যস্থান পূরণ করো:',TRUE:'সত্য / মিথ্যা নির্ধারণ করো:',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',SHORT:'সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',LONG:'দীর্ঘ / রচনামূলক প্রশ্নের উত্তর দাও:'};const label=typeLabels[s.type]||s.title|| (en?'Questions':'প্রশ্নাবলি');return `<section data-section="${s.id}"><div class="section-title"><span class="section-label">${si+1}. ${esc(label)}</span><span class="section-total">${s.questions.length} × ${s.marks} = ${total}</span><button class="danger no-print section-delete" style="padding:4px 8px;font-size:11px" onclick="removeSection('${s.id}')">মুছুন</button></div>${s.questions.map((q,qi)=>questionHTML(s,q,qi)).join('')}<button class="add-inline no-print" onclick="addQuestion('${s.id}')">＋ প্রশ্ন যোগ করুন</button></section>`}).join('')}
@@ -371,6 +510,6 @@ async function importDocument(event){
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveProject(false)});
 window.addEventListener('beforeunload',()=>{try{saveProject(false)}catch(e){}});
 setInterval(()=>{if(current())saveProject(false)},20000);
-loadAll();initSupabaseSettings();
+loadAll();initSupabaseSettings();initLocalLogin();
 </script>
 </body></html>
