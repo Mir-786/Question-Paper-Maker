@@ -51,6 +51,22 @@ body.preview-mode .preview-exit{display:block!important;position:fixed;right:16p
   <div style="margin:22px 8px;color:#94a3b8;font-size:11px">Your projects are saved in this browser on this device.</div>
 </aside>
 <main>
+ <section class="card no-print" id="supabaseConnectCard" style="margin-bottom:18px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+   <div><h3 style="margin:0">☁ Supabase Server Connection</h3><div class="muted">Connect this Question Paper Studio to your Supabase project.</div></div>
+   <span id="sbStatus" class="badge" style="padding:6px 10px;border-radius:20px;background:#f1f5f9;color:#475569">Not connected</span>
+  </div>
+  <div class="grid" style="margin-top:14px">
+   <div class="field"><label>Supabase Project URL</label><input id="sbUrl" type="url" placeholder="https://your-project.supabase.co" autocomplete="url"></div>
+   <div class="field"><label>Publishable key / anon public key</label><input id="sbKey" type="password" placeholder="sb_publishable_... or anon public key" autocomplete="off"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+   <button type="button" onclick="connectSupabase()">Connect Supabase</button>
+   <button type="button" class="secondary" onclick="disconnectSupabase()">Disconnect</button>
+   <button type="button" class="ghost" onclick="copySupabaseSQL()">Copy database setup SQL</button>
+  </div>
+  <div class="muted" id="sbMessage" style="margin-top:9px">Connection details are saved in this browser. Use only a Supabase publishable/anon key, never a service_role or secret key.</div>
+ </section>
  <section id="editorView">
   <div class="topline"><div><h1 id="pageTitle">Question Paper Editor</h1><div class="muted">Create, format and print your question paper.</div></div><div class="actions no-print"><button class="secondary" style="background:#16a34a!important;border-color:#16a34a!important;color:#fff!important" onclick="saveProject(true)">Save now</button><button class="secondary" onclick="document.getElementById('docFile').click()">📂 Load DOCX / DOC</button><input id="docFile" type="file" accept=".docx,.doc" onchange="importDocument(event)"><button class="secondary" style="background:#dc2626!important;border-color:#dc2626!important;color:#fff!important" onclick="togglePrintLayout()">▣ Print layout</button><button onclick="window.print()">🖨 Print / Save PDF</button><button class="secondary" onclick="downloadDocx()">⬇ DOCX download</button></div></div>
   <div class="card config no-print">
@@ -105,8 +121,63 @@ body.preview-mode .preview-exit{display:block!important;position:fixed;right:16p
 <button class="preview-exit" onclick="togglePrintLayout()">✕ Exit print layout</button><div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.3.1/html-docx.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const KEY='questionPaperStudio_v1';
+
+const SB_CONFIG_KEY='qps_supabase_config_v1';
+let sbClient=null;
+function sbConfig(){try{return JSON.parse(localStorage.getItem(SB_CONFIG_KEY)||'{}')}catch(e){return {}}}
+function initSupabaseSettings(){
+ const c=sbConfig();
+ if($('sbUrl'))$('sbUrl').value=c.url||'';
+ if($('sbKey'))$('sbKey').value=c.key||'';
+ if(c.url&&c.key){$('sbStatus').textContent='Saved · not verified';$('sbStatus').style.background='#fef3c7';$('sbStatus').style.color='#92400e';}
+}
+async function connectSupabase(){
+ const url=$('sbUrl').value.trim().replace(/\/+$/,'');
+ const key=$('sbKey').value.trim();
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){toast('সঠিক Supabase Project URL দিন');return}
+ if(!key){toast('Publishable / anon key দিন');return}
+ if(/service_role|sb_secret/i.test(key)){toast('Secret বা service_role key ব্যবহার করবেন না');return}
+ $('sbMessage').textContent='Connecting to Supabase…';
+ try{
+  const response=await fetch(url+'/auth/v1/settings',{headers:{apikey:key,Authorization:'Bearer '+key}});
+  if(!response.ok)throw new Error('HTTP '+response.status+' — URL বা key পরীক্ষা করুন');
+  localStorage.setItem(SB_CONFIG_KEY,JSON.stringify({url,key}));
+  if(window.supabase?.createClient)sbClient=window.supabase.createClient(url,key);
+  $('sbStatus').textContent='Connected';$('sbStatus').style.background='#dcfce7';$('sbStatus').style.color='#166534';
+  $('sbMessage').textContent='Supabase endpoint verified. Connection settings saved in this browser. Database tables, authentication and Row Level Security setup are still required before project sync is enabled.';
+  toast('Supabase connection successful');
+ }catch(err){
+  $('sbStatus').textContent='Connection failed';$('sbStatus').style.background='#fee2e2';$('sbStatus').style.color='#991b1b';
+  $('sbMessage').textContent='সংযোগ করা যায়নি: '+(err.message||'Network error')+'. URL, key, internet এবং Supabase project status পরীক্ষা করুন।';
+ }
+}
+function disconnectSupabase(){
+ localStorage.removeItem(SB_CONFIG_KEY);sbClient=null;
+ $('sbUrl').value='';$('sbKey').value='';$('sbStatus').textContent='Not connected';
+ $('sbStatus').style.background='#f1f5f9';$('sbStatus').style.color='#475569';
+ $('sbMessage').textContent='Supabase connection settings এই browser থেকে মুছে দেওয়া হয়েছে।';
+}
+function copySupabaseSQL(){
+ const sql=`create table if not exists public.question_papers (
+ id text primary key,
+ owner_id uuid not null references auth.users(id) on delete cascade,
+ owner_username text not null,
+ project_name text not null,
+ project_data jsonb not null,
+ created_at timestamptz not null default now(),
+ updated_at timestamptz not null default now()
+);
+alter table public.question_papers enable row level security;
+create policy "Admins can read all papers" on public.question_papers for select to authenticated using (true);
+create policy "Owners can insert own papers" on public.question_papers for insert to authenticated with check (auth.uid() = owner_id);
+create policy "Owners can update own papers" on public.question_papers for update to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+create policy "Owners can delete own papers" on public.question_papers for delete to authenticated using (auth.uid() = owner_id);`;
+ if(navigator.clipboard?.writeText){navigator.clipboard.writeText(sql).then(()=>toast('Database setup SQL copied')).catch(()=>prompt('Copy this SQL into Supabase SQL Editor:',sql))}
+ else prompt('Copy this SQL into Supabase SQL Editor:',sql);
+}
 let projects=[],currentId=null,activeView='editor',saveTimer=null;
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -300,6 +371,6 @@ async function importDocument(event){
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveProject(false)});
 window.addEventListener('beforeunload',()=>{try{saveProject(false)}catch(e){}});
 setInterval(()=>{if(current())saveProject(false)},20000);
-loadAll();
+loadAll();initSupabaseSettings();
 </script>
 </body></html>
