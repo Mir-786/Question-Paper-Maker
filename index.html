@@ -277,6 +277,7 @@ async function sbRequest(path,options={}){
 }
 async function syncOneProjectNow(project){
  if(!project)return;
+ if(!isProjectOwner(project))throw new Error('Permission denied: শুধু Project Owner পরিবর্তন করতে পারবেন');
  project.updated=Date.now();
  localStorage.setItem(KEY,JSON.stringify(projects));
  if(!sbSyncReady){
@@ -301,7 +302,7 @@ async function syncProjectsToSupabase(){
  if(!sbSyncReady)return;
  // Sync every locally available project while preserving its original creator.
  // This allows the same shared workspace to appear on other devices and logins.
- const rows=projects.map(p=>{
+ const rows=projects.filter(p=>isProjectOwner(p)).map(p=>{
   const owner=p.createdBy||currentUsername();
   if(!p.createdBy)p.createdBy=owner;
   return {
@@ -332,7 +333,7 @@ async function loadProjectsFromSupabase({background=false}={}){
  // overwrite a project that already exists in the cloud.
  const localOnly=projects.filter(p=>!remoteIds.has(String(p.id)));
  // Ignore the empty startup placeholder on a device with no local/cloud work.
- const usefulLocalOnly=localOnly.filter(p=>!((!p.sections||p.sections.length===0) && (!p.name||p.name==='Untitled question paper')));
+ const usefulLocalOnly=localOnly.filter(p=>isProjectOwner(p) && !((!p.sections||p.sections.length===0) && (!p.name||p.name==='Untitled question paper')));
  const previousId=currentId;
  projects=[...remote,...usefulLocalOnly].sort((a,b)=>(Number(b.updated)||0)-(Number(a.updated)||0));
  if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;}
@@ -371,7 +372,7 @@ async function connectSupabase(){
   await loadProjectsFromSupabase();
   startCloudPolling();
   setSbStatus('Connected · Auto sync active',true);
-  $('sbMessage').textContent='Supabase connected. এই account-এর projects এখন Supabase-এ sync হচ্ছে।';
+  $('sbMessage').textContent='Supabase connected. অন্য Member-এর Project View-only। প্রকৃত server-side security-এর জন্য Supabase Auth + user-based RLS প্রয়োজন।';
   toast('Supabase connected and data synced');
  }catch(err){
   sbSyncReady=false;setSbStatus('Connection / table error',false);
@@ -423,25 +424,31 @@ function persist(){
  }
 }
 function current(){return projects.find(p=>p.id===currentId)}
+function projectOwner(p){return String(p?.createdBy||'unknown').trim().toLowerCase()}
+function isProjectOwner(p){return !!p && projectOwner(p)===String(currentUsername()).trim().toLowerCase()}
+function canEditCurrent(){return isProjectOwner(current())}
+function requireProjectOwner(p=current()){if(!isProjectOwner(p)){toast('এটি অন্য Member-এর Project · শুধু View করা যাবে');return false}return true}
+function applyProjectPermissions(){const editable=canEditCurrent();['paperLanguage','institution','examName','subject','className','duration','fullMarks','examDate','session','projectName','typeSelect','countInput','marksInput'].forEach(id=>{const el=$(id);if(el)el.disabled=!editable});document.querySelectorAll('#editorView [contenteditable]').forEach(el=>el.setAttribute('contenteditable',editable?'true':'false'));document.querySelectorAll('#editorView .editor-only').forEach(el=>el.classList.toggle('hidden',!editable));const save=document.querySelector('#editorView button[onclick^="saveProject"]');if(save)save.classList.toggle('hidden',!editable)}
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1800)}
 function saveProject(manual=false){
- const p=current();if(!p)return;
+ const p=current();if(!p)return;if(!requireProjectOwner(p))return;
  p.updated=Date.now();persist();
  $('saveStatus').textContent=sbSyncReady?'● Saving to Supabase…':'● Saved locally · Supabase not connected';
  if(manual)toast(sbSyncReady?'Project save sent to Supabase':'Project saved on this device');
 }
 function scheduleSave(){
+ if(!requireProjectOwner())return;
  $('saveStatus').textContent='● Changes pending…';
  clearTimeout(saveTimer);
  // Persist question edits quickly so the full project_data (including sections/questions)
  // is written to Supabase before the user navigates away or closes the page.
  saveTimer=setTimeout(()=>saveProject(false),800);
 }
-function updateProjectName(){const p=current();if(!p)return;p.name=$('projectName').value.trim()||'Untitled question paper';scheduleSave();renderProjectList()}
-function updateMeta(){const p=current();if(!p)return;p.meta={...p.meta,language:$('paperLanguage').value,institution:$('institution').value,examName:$('examName').value,subject:$('subject').value,className:$('className').value,duration:$('duration').value,fullMarks:$('fullMarks').value,examDate:$('examDate').value,session:$('session').value};renderMeta();scheduleSave()}
+function updateProjectName(){const p=current();if(!p||!requireProjectOwner(p))return;p.name=$('projectName').value.trim()||'Untitled question paper';scheduleSave();renderProjectList()}
+function updateMeta(){const p=current();if(!p||!requireProjectOwner(p))return;p.meta={...p.meta,language:$('paperLanguage').value,institution:$('institution').value,examName:$('examName').value,subject:$('subject').value,className:$('className').value,duration:$('duration').value,fullMarks:$('fullMarks').value,examDate:$('examDate').value,session:$('session').value};renderMeta();scheduleSave()}
 function renderMeta(){const m=current()?.meta||{},en=m.language==='en';$('pInstitution').textContent=m.institution||(en?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার');$('pExamName').textContent=m.examName||(en?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন');$('pSubject').textContent=(en?'SUB- ':'বিষয়: ')+(m.subject||'—');$('pClass').textContent=(en?'Class - ':'শ্রেণি - ')+(m.className||'—');$('pDuration').textContent=(en?'TIME- ':'সময়- ')+(m.duration||'—');$('pMarks').textContent=(en?'F.M- ':'পূর্ণমান- ')+(m.fullMarks||'—');$('pSession').textContent=(en?'Session - ':'শিক্ষাবর্ষ - ')+(m.session||'—');$('pNameLabel').firstChild.textContent=en?'Name ':'নাম ';$('pRollLabel').firstChild.textContent=en?'Roll ':'রোল ';$('lblInstitution').textContent=en?'Institution / School name':'প্রতিষ্ঠানের নাম';$('lblExamName').textContent=en?'Exam name':'পরীক্ষার নাম';$('lblSubject').textContent=en?'Subject':'বিষয়';$('lblClass').textContent=en?'Class':'শ্রেণি';$('lblDuration').textContent=en?'Time':'সময়';$('lblMarks').textContent=en?'Full marks':'পূর্ণমান';$('lblDate').textContent=en?'Exam date':'পরীক্ষার তারিখ';$('lblSession').textContent=en?'Session':'শিক্ষাবর্ষ';$('typeSelect').querySelector('option[value="MCQ"]').textContent=en?'Multiple Choice Questions (MCQ)':'বহুনির্বাচনী প্রশ্ন (MCQ)';$('typeSelect').querySelector('option[value="FILL"]').textContent=en?'Fill in the blanks':'শূন্যস্থান পূরণ';$('typeSelect').querySelector('option[value="TRUE"]').textContent=en?'True / False':'সত্য / মিথ্যা';$('typeSelect').querySelector('option[value="VERY_SHORT"]').textContent=en?'Very short questions':'অতি সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="SHORT"]').textContent=en?'Short questions':'সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="LONG"]').textContent=en?'Long / descriptive questions':'দীর্ঘ / রচনামূলক প্রশ্ন';}
-function changePaperLanguage(lang){const p=current();if(!p)return;const wasDefaultBn=p.meta.institution==='সাফল্য টিউশন সেন্টার'||!p.meta.institution;const wasDefaultEn=p.meta.institution==='Safollo Tuition Center';p.meta.language=lang;if(wasDefaultBn||wasDefaultEn)p.meta.institution=lang==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName||p.meta.examName==='তৃতীয় পর্যায়ক্রমিক মূল্যায়ন'||p.meta.examName==='3rd Summative Evaluation')p.meta.examName=lang==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';openProject(p.id);scheduleSave();}
-function openProject(id){const p=projects.find(x=>x.id===id);if(!p)return;currentId=id;$('projectName').value=p.name;$('paperLanguage').value=p.meta.language||'bn';$('institution').value=p.meta.institution||'';$('examName').value=p.meta.examName||'';$('subject').value=p.meta.subject||'';$('className').value=p.meta.className||'';$('duration').value=p.meta.duration||'';$('fullMarks').value=p.meta.fullMarks||'';$('examDate').value=p.meta.examDate||'';$('session').value=p.meta.session||'';renderMeta();renderSections();showView('editor');renderProjectList()}
+function changePaperLanguage(lang){const p=current();if(!p||!requireProjectOwner(p))return;const wasDefaultBn=p.meta.institution==='সাফল্য টিউশন সেন্টার'||!p.meta.institution;const wasDefaultEn=p.meta.institution==='Safollo Tuition Center';p.meta.language=lang;if(wasDefaultBn||wasDefaultEn)p.meta.institution=lang==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName||p.meta.examName==='তৃতীয় পর্যায়ক্রমিক মূল্যায়ন'||p.meta.examName==='3rd Summative Evaluation')p.meta.examName=lang==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';openProject(p.id);scheduleSave();}
+function openProject(id){const p=projects.find(x=>x.id===id);if(!p)return;currentId=id;$('projectName').value=p.name;$('paperLanguage').value=p.meta.language||'bn';$('institution').value=p.meta.institution||'';$('examName').value=p.meta.examName||'';$('subject').value=p.meta.subject||'';$('className').value=p.meta.className||'';$('duration').value=p.meta.duration||'';$('fullMarks').value=p.meta.fullMarks||'';$('examDate').value=p.meta.examDate||'';$('session').value=p.meta.session||'';renderMeta();renderSections();showView('editor');renderProjectList();applyProjectPermissions()}
 function newProject(){const p=blankProject();p.createdBy=localStorage.getItem('qps_local_username')||'unknown';projects.unshift(p);currentId=p.id;persist();openProject(p.id);toast('New project created')}
 function showView(view){activeView=view;$('supabaseConnectCard').classList.add('hidden');$('editorView').classList.toggle('hidden',view!=='editor');$('historyView').classList.toggle('hidden',view!=='history');if(view==='history')renderHistory();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
 function toggleSideMenu(){
@@ -478,10 +485,11 @@ function renderHistory(){
  const filters=[['all','All'],['miraj','miraj'],['moyna','moyna'],['abida','abida']];
  const rows=projects.slice().sort((a,b)=>b.updated-a.updated).filter(p=>historyOwnerFilter==='all'||(p.createdBy||'unknown')===historyOwnerFilter);
  const tabs=filters.map(([key,label])=>`<button class="history-filter ${historyOwnerFilter===key?'active':''}" onclick="setHistoryFilter('${key}')">${label}</button>`).join('');
- const cards=rows.map(p=>`<div class="history-row"><div><strong>${esc(p.name)}</strong><div class="muted">${esc(p.meta.subject||'No subject')} · ${p.sections.reduce((n,s)=>n+s.questions.length,0)} questions · Created by ${esc(p.createdBy||'unknown')} · Last edited ${new Date(p.updated).toLocaleString()}</div></div><div class="actions"><button class="secondary" onclick="openProject('${p.id}')">Open & edit</button><button class="danger" onclick="deleteProject('${p.id}')">মুছুন</button></div></div>`).join('');
+ const cards=rows.map(p=>{const owner=isProjectOwner(p);return `<div class="history-row"><div><strong>${esc(p.name)}</strong><div class="muted">${esc(p.meta.subject||'No subject')} · ${p.sections.reduce((n,s)=>n+s.questions.length,0)} questions · Created by ${esc(p.createdBy||'unknown')} · Last edited ${new Date(p.updated).toLocaleString()}</div></div><div class="actions"><button class="secondary" onclick="openProject('${p.id}')">${owner?'Open & edit':'View only'}</button>${owner?`<button class="danger" onclick="deleteProject('${p.id}')">মুছুন</button>`:''}</div></div>`}).join('');
  $('historyList').innerHTML=`<div class="history-filters">${tabs}</div>${cards||'<div class="empty">No project history for this user.</div>'}`;
 }
 async function deleteProject(id){
+ const target=projects.find(p=>String(p.id)===String(id));if(!requireProjectOwner(target))return;
  if(!confirm('Delete this project permanently?'))return;
  const deleted=projects.find(p=>String(p.id)===String(id));
  projects=projects.filter(p=>String(p.id)!==String(id));
@@ -492,13 +500,14 @@ async function deleteProject(id){
   catch(err){console.error('Supabase delete failed:',err);toast('Local delete হয়েছে, Supabase delete ব্যর্থ');}
  }
 }
-function generateSection(){const p=current(),type=$('typeSelect').value,count=Math.max(1,Math.min(100,parseInt($('countInput').value)||1)),marks=parseFloat($('marksInput').value)||0;const titles={MCQ:'বহুনির্বাচনী প্রশ্ন (MCQ)',SHORT:'সংক্ষিপ্ত প্রশ্ন',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন',LONG:'দীর্ঘ / রচনামূলক প্রশ্ন',FILL:'শূন্যস্থান পূরণ',TRUE:'সত্য / মিথ্যা'};const section={id:uid(),type,title:titles[type],marks,questions:[]};for(let i=0;i<count;i++)section.questions.push({id:uid(),text:'',options:type==='MCQ'?['','','','']:null});p.sections.push(section);renderSections();scheduleSave();toast(count+'টি প্রশ্ন যোগ করা হয়েছে')}
-function renderSections(){const p=current();if(!p)return;const root=$('sections');if(!p.sections.length){root.innerHTML='<div class="empty">এখনও কোনো প্রশ্ন যোগ করা হয়নি। উপরে থেকে প্রশ্নের ধরন নির্বাচন করে বিভাগ যোগ করুন।</div>';return}root.innerHTML=p.sections.map((s,si)=>{const total=s.questions.length*s.marks;const en=current()?.meta?.language==='en';const typeLabels=en?{MCQ:'Choose the correct answer:',FILL:'Fill in the blanks:',TRUE:'Write True or False:',VERY_SHORT:'Answer the following very short questions:',SHORT:'Answer the following short questions:',LONG:'Answer the following long questions:'}:{MCQ:'সঠিক বিকল্পটি নির্বাচন করো:',FILL:'শূন্যস্থান পূরণ করো:',TRUE:'সত্য / মিথ্যা নির্ধারণ করো:',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',SHORT:'সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',LONG:'দীর্ঘ / রচনামূলক প্রশ্নের উত্তর দাও:'};const label=typeLabels[s.type]||s.title|| (en?'Questions':'প্রশ্নাবলি');return `<section data-section="${s.id}"><div class="section-title"><span class="section-label">${si+1}. ${esc(label)}</span><span class="section-total">${s.questions.length} × ${s.marks} = ${total}</span><button class="danger no-print section-delete" style="padding:4px 8px;font-size:11px" onclick="removeSection('${s.id}')">মুছুন</button></div>${s.questions.map((q,qi)=>questionHTML(s,q,qi)).join('')}<button class="add-inline no-print" onclick="addQuestion('${s.id}')">＋ প্রশ্ন যোগ করুন</button></section>`}).join('')}
-function questionHTML(s,q,qi){return `<div class="question" data-q="${q.id}"><div class="qtop"><span class="qnum">${qi+1}.</span><div class="qbody" contenteditable="true" data-placeholder="${({MCQ:'প্রশ্ন লিখুন…',FILL:'শূন্যস্থান পূরণের বাক্য লিখুন…',TRUE:'বাক্যটি লিখুন…',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন লিখুন…',SHORT:'সংক্ষিপ্ত প্রশ্ন লিখুন…',LONG:'দীর্ঘ প্রশ্ন লিখুন…',IMPORTED:'এখানে সম্পাদনা করুন…'})[s.type]||'প্রশ্ন লিখুন…'}" oninput="editQuestion('${s.id}','${q.id}',this.innerHTML)">${q.text||''}</div><div class="qtools no-print"><button class="secondary" onclick="moveQuestion('${s.id}','${q.id}',-1)" title="Move up">↑</button><button class="secondary" onclick="moveQuestion('${s.id}','${q.id}',1)" title="Move down">↓</button><button class="danger" onclick="removeQuestion('${s.id}','${q.id}')">✕</button></div></div>${q.options?`<div class="options">${q.options.map((o,i)=>`<div><b>(${ 'ABCD'[i] })</b><span contenteditable="true" data-placeholder="Option ${String.fromCharCode(65+i)}" oninput="editOption('${s.id}','${q.id}',${i},this.innerHTML)">${o||''}</span></div>`).join('')}</div>`:''}</div>`}
-function editQuestion(sid,qid,html){const q=current().sections.find(s=>s.id===sid)?.questions.find(q=>q.id===qid);if(q){q.text=html;scheduleSave()}}
-function editOption(sid,qid,i,html){const q=current().sections.find(s=>s.id===sid)?.questions.find(q=>q.id===qid);if(q){q.options[i]=html;scheduleSave()}}
-function addQuestion(sid){const s=current().sections.find(s=>s.id===sid);s.questions.push({id:uid(),text:'',options:s.type==='MCQ'?['','','','']:null});renderSections();scheduleSave()}
+function generateSection(){if(!requireProjectOwner())return;const p=current(),type=$('typeSelect').value,count=Math.max(1,Math.min(100,parseInt($('countInput').value)||1)),marks=parseFloat($('marksInput').value)||0;const titles={MCQ:'বহুনির্বাচনী প্রশ্ন (MCQ)',SHORT:'সংক্ষিপ্ত প্রশ্ন',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন',LONG:'দীর্ঘ / রচনামূলক প্রশ্ন',FILL:'শূন্যস্থান পূরণ',TRUE:'সত্য / মিথ্যা'};const section={id:uid(),type,title:titles[type],marks,questions:[]};for(let i=0;i<count;i++)section.questions.push({id:uid(),text:'',options:type==='MCQ'?['','','','']:null});p.sections.push(section);renderSections();scheduleSave();toast(count+'টি প্রশ্ন যোগ করা হয়েছে')}
+function renderSections(){const p=current();if(!p)return;const root=$('sections');if(!p.sections.length){root.innerHTML='<div class="empty">এখনও কোনো প্রশ্ন যোগ করা হয়নি। উপরে থেকে প্রশ্নের ধরন নির্বাচন করে বিভাগ যোগ করুন।</div>';return}root.innerHTML=p.sections.map((s,si)=>{const total=s.questions.length*s.marks;const en=current()?.meta?.language==='en';const typeLabels=en?{MCQ:'Choose the correct answer:',FILL:'Fill in the blanks:',TRUE:'Write True or False:',VERY_SHORT:'Answer the following very short questions:',SHORT:'Answer the following short questions:',LONG:'Answer the following long questions:'}:{MCQ:'সঠিক বিকল্পটি নির্বাচন করো:',FILL:'শূন্যস্থান পূরণ করো:',TRUE:'সত্য / মিথ্যা নির্ধারণ করো:',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',SHORT:'সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',LONG:'দীর্ঘ / রচনামূলক প্রশ্নের উত্তর দাও:'};const label=typeLabels[s.type]||s.title|| (en?'Questions':'প্রশ্নাবলি');return `<section data-section="${s.id}"><div class="section-title"><span class="section-label">${si+1}. ${esc(label)}</span><span class="section-total">${s.questions.length} × ${s.marks} = ${total}</span>${canEditCurrent()?`<button class="danger no-print section-delete" style="padding:4px 8px;font-size:11px" onclick="removeSection('${s.id}')">মুছুন</button>`:''}</div>${s.questions.map((q,qi)=>questionHTML(s,q,qi)).join('')}${canEditCurrent()?`<button class="add-inline no-print" onclick="addQuestion('${s.id}')">＋ প্রশ্ন যোগ করুন</button>`:''}</section>`}).join('')}
+function questionHTML(s,q,qi){return `<div class="question" data-q="${q.id}"><div class="qtop"><span class="qnum">${qi+1}.</span><div class="qbody" contenteditable="${canEditCurrent()?'true':'false'}" data-placeholder="${({MCQ:'প্রশ্ন লিখুন…',FILL:'শূন্যস্থান পূরণের বাক্য লিখুন…',TRUE:'বাক্যটি লিখুন…',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন লিখুন…',SHORT:'সংক্ষিপ্ত প্রশ্ন লিখুন…',LONG:'দীর্ঘ প্রশ্ন লিখুন…',IMPORTED:'এখানে সম্পাদনা করুন…'})[s.type]||'প্রশ্ন লিখুন…'}" oninput="editQuestion('${s.id}','${q.id}',this.innerHTML)">${q.text||''}</div><div class="qtools no-print ${canEditCurrent()?'':'hidden'}"><button class="secondary" onclick="moveQuestion('${s.id}','${q.id}',-1)" title="Move up">↑</button><button class="secondary" onclick="moveQuestion('${s.id}','${q.id}',1)" title="Move down">↓</button><button class="danger" onclick="removeQuestion('${s.id}','${q.id}')">✕</button></div></div>${q.options?`<div class="options">${q.options.map((o,i)=>`<div><b>(${ 'ABCD'[i] })</b><span contenteditable="${canEditCurrent()?'true':'false'}" data-placeholder="Option ${String.fromCharCode(65+i)}" oninput="editOption('${s.id}','${q.id}',${i},this.innerHTML)">${o||''}</span></div>`).join('')}</div>`:''}</div>`}
+function editQuestion(sid,qid,html){if(!requireProjectOwner())return;const q=current().sections.find(s=>s.id===sid)?.questions.find(q=>q.id===qid);if(q){q.text=html;scheduleSave()}}
+function editOption(sid,qid,i,html){if(!requireProjectOwner())return;const q=current().sections.find(s=>s.id===sid)?.questions.find(q=>q.id===qid);if(q){q.options[i]=html;scheduleSave()}}
+function addQuestion(sid){if(!requireProjectOwner())return;const s=current().sections.find(s=>s.id===sid);s.questions.push({id:uid(),text:'',options:s.type==='MCQ'?['','','','']:null});renderSections();scheduleSave()}
 async function removeQuestion(sid,qid){
+ if(!requireProjectOwner())return;
  const p=current();if(!p)return;
  const s=p.sections.find(s=>String(s.id)===String(sid));if(!s)return;
  s.questions=s.questions.filter(q=>String(q.id)!==String(qid));
@@ -516,6 +525,7 @@ async function removeQuestion(sid,qid){
  }
 }
 async function removeSection(sid){
+ if(!requireProjectOwner())return;
  if(!confirm('Delete this complete section and its questions?'))return;
  const p=current();if(!p)return;
  p.sections=p.sections.filter(s=>String(s.id)!==String(sid));
@@ -532,8 +542,8 @@ async function removeSection(sid){
   toast('Server থেকে section delete হয়নি');
  }
 }
-function moveQuestion(sid,qid,dir){const s=current().sections.find(s=>s.id===sid),i=s.questions.findIndex(q=>q.id===qid),j=i+dir;if(j<0||j>=s.questions.length)return;[s.questions[i],s.questions[j]]=[s.questions[j],s.questions[i]];renderSections();scheduleSave()}
-function fmt(cmd,val=null){document.execCommand(cmd,false,val);document.activeElement?.focus();scheduleSave()}
+function moveQuestion(sid,qid,dir){if(!requireProjectOwner())return;const s=current().sections.find(s=>s.id===sid),i=s.questions.findIndex(q=>q.id===qid),j=i+dir;if(j<0||j>=s.questions.length)return;[s.questions[i],s.questions[j]]=[s.questions[j],s.questions[i]];renderSections();scheduleSave()}
+function fmt(cmd,val=null){if(!requireProjectOwner())return;document.execCommand(cmd,false,val);document.activeElement?.focus();scheduleSave()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 function togglePrintLayout(){
@@ -685,7 +695,7 @@ async function importDocument(event){
     const holder=document.createElement('div');holder.innerHTML=result.value;
     const blocks=[...holder.querySelectorAll('p,h1,h2,h3,h4,li')];
     const content=blocks.length?blocks.map(x=>x.innerHTML.trim()).filter(Boolean):[holder.innerHTML.trim()];
-    const p=blankProject();p.name=file.name.replace(/\\.docx?$/i,'');
+    const p=blankProject();p.createdBy=currentUsername();p.name=file.name.replace(/\\.docx?$/i,'');
     p.meta.institution=$('institution').value||'Safollo Tuition Center';
     const section={id:uid(),type:'IMPORTED',title:'Imported document content',marks:0,questions:content.map(html=>({id:uid(),text:html,options:null}))};
     p.sections=[section];projects.unshift(p);currentId=p.id;persist();openProject(p.id);
@@ -696,7 +706,7 @@ async function importDocument(event){
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveProject(false)});
 window.addEventListener('beforeunload',()=>{try{saveProject(false)}catch(e){}});
-setInterval(()=>{if(current())saveProject(false)},20000);
+setInterval(()=>{if(current()&&canEditCurrent())saveProject(false)},20000);
 loadAll();initSupabaseSettings();initLocalLogin();
 </script>
 </body></html>
