@@ -215,16 +215,27 @@ function loginLocal(){
  if(!LOCAL_ACCOUNTS.some(a=>a.username===u&&a.password===pw)){
   $('loginError').textContent='Incorrect username or password';return;
  }
- sessionStorage.setItem('qps_local_logged_in','1');
- sessionStorage.setItem('qps_local_username',u);
+ localStorage.setItem('qps_local_logged_in','1');
+ localStorage.setItem('qps_local_username',u);
  $('loginGate').style.display='none';
  const who=$('loggedInUser');if(who)who.textContent=u;
+ const cfg=sbConfig();
+ if(cfg.url&&cfg.key){
+  $('sbUrl').value=cfg.url;$('sbKey').value=cfg.key;
+  connectSupabase().catch(err=>console.error('Automatic Supabase reconnect failed:',err));
+ }
 }
-function logoutLocal(){sessionStorage.removeItem('qps_local_logged_in');$('loginGate').style.display='flex';$('loginPassword').value='';}
+function logoutLocal(){localStorage.removeItem('qps_local_logged_in');localStorage.removeItem('qps_local_username');$('loginGate').style.display='flex';$('loginPassword').value='';}
 function initLocalLogin(){
- if(sessionStorage.getItem('qps_local_logged_in')==='1'){
+ if(localStorage.getItem('qps_local_logged_in')==='1'){
   $('loginGate').style.display='none';
-  const who=$('loggedInUser');if(who)who.textContent=sessionStorage.getItem('qps_local_username')||'User';
+  const who=$('loggedInUser');if(who)who.textContent=localStorage.getItem('qps_local_username')||'User';
+  const cfg=sbConfig();
+  if(cfg.url&&cfg.key){
+   $('sbUrl').value=cfg.url;$('sbKey').value=cfg.key;
+   setSbStatus('Reconnecting…',true);
+   connectSupabase().catch(err=>console.error('Automatic Supabase reconnect failed:',err));
+  }
  }
 }
 
@@ -234,7 +245,7 @@ let sbClient=null;
 let sbSyncReady=false;
 let sbSyncQueue=Promise.resolve();
 function sbConfig(){try{return JSON.parse(localStorage.getItem(SB_CONFIG_KEY)||'{}')}catch(e){return {}}}
-function currentUsername(){return sessionStorage.getItem('qps_local_username')||'unknown'}
+function currentUsername(){return localStorage.getItem('qps_local_username')||'unknown'}
 function initSupabaseSettings(){
  const c=sbConfig();
  if($('sbUrl'))$('sbUrl').value=c.url||'';
@@ -343,7 +354,7 @@ notify pgrst, 'reload schema';`;
 let projects=[],currentId=null,activeView='editor',saveTimer=null;
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-function blankProject(){return{id:uid(),name:'Untitled question paper',created:Date.now(),updated:Date.now(),createdBy:sessionStorage.getItem('qps_local_username')||'unknown',meta:{language:'bn',institution:'সাফল্য টিউশন সেন্টার',examName:'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন',subject:'',className:'',duration:'',fullMarks:'',examDate:'',session:''},sections:[]}}
+function blankProject(){return{id:uid(),name:'Untitled question paper',created:Date.now(),updated:Date.now(),createdBy:localStorage.getItem('qps_local_username')||'unknown',meta:{language:'bn',institution:'সাফল্য টিউশন সেন্টার',examName:'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন',subject:'',className:'',duration:'',fullMarks:'',examDate:'',session:''},sections:[]}}
 function loadAll(){try{projects=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){projects=[]}projects.forEach(p=>{p.meta=p.meta||{};if(!p.meta.language)p.meta.language='bn';if(!p.meta.institution)p.meta.institution=p.meta.language==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName)p.meta.examName=p.meta.language==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';if(p.meta.session===undefined)p.meta.session=''});if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;persist()}else currentId=projects[0].id;renderProjectList();openProject(currentId)}
 function persist(){
  localStorage.setItem(KEY,JSON.stringify(projects));renderProjectList();
@@ -377,7 +388,7 @@ function updateMeta(){const p=current();if(!p)return;p.meta={...p.meta,language:
 function renderMeta(){const m=current()?.meta||{},en=m.language==='en';$('pInstitution').textContent=m.institution||(en?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার');$('pExamName').textContent=m.examName||(en?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন');$('pSubject').textContent=(en?'SUB- ':'বিষয়: ')+(m.subject||'—');$('pClass').textContent=(en?'Class - ':'শ্রেণি - ')+(m.className||'—');$('pDuration').textContent=(en?'TIME- ':'সময়- ')+(m.duration||'—');$('pMarks').textContent=(en?'F.M- ':'পূর্ণমান- ')+(m.fullMarks||'—');$('pSession').textContent=(en?'Session - ':'শিক্ষাবর্ষ - ')+(m.session||'—');$('pNameLabel').firstChild.textContent=en?'Name ':'নাম ';$('pRollLabel').firstChild.textContent=en?'Roll ':'রোল ';$('lblInstitution').textContent=en?'Institution / School name':'প্রতিষ্ঠানের নাম';$('lblExamName').textContent=en?'Exam name':'পরীক্ষার নাম';$('lblSubject').textContent=en?'Subject':'বিষয়';$('lblClass').textContent=en?'Class':'শ্রেণি';$('lblDuration').textContent=en?'Time':'সময়';$('lblMarks').textContent=en?'Full marks':'পূর্ণমান';$('lblDate').textContent=en?'Exam date':'পরীক্ষার তারিখ';$('lblSession').textContent=en?'Session':'শিক্ষাবর্ষ';$('typeSelect').querySelector('option[value="MCQ"]').textContent=en?'Multiple Choice Questions (MCQ)':'বহুনির্বাচনী প্রশ্ন (MCQ)';$('typeSelect').querySelector('option[value="FILL"]').textContent=en?'Fill in the blanks':'শূন্যস্থান পূরণ';$('typeSelect').querySelector('option[value="TRUE"]').textContent=en?'True / False':'সত্য / মিথ্যা';$('typeSelect').querySelector('option[value="VERY_SHORT"]').textContent=en?'Very short questions':'অতি সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="SHORT"]').textContent=en?'Short questions':'সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="LONG"]').textContent=en?'Long / descriptive questions':'দীর্ঘ / রচনামূলক প্রশ্ন';}
 function changePaperLanguage(lang){const p=current();if(!p)return;const wasDefaultBn=p.meta.institution==='সাফল্য টিউশন সেন্টার'||!p.meta.institution;const wasDefaultEn=p.meta.institution==='Safollo Tuition Center';p.meta.language=lang;if(wasDefaultBn||wasDefaultEn)p.meta.institution=lang==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName||p.meta.examName==='তৃতীয় পর্যায়ক্রমিক মূল্যায়ন'||p.meta.examName==='3rd Summative Evaluation')p.meta.examName=lang==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';openProject(p.id);scheduleSave();}
 function openProject(id){const p=projects.find(x=>x.id===id);if(!p)return;currentId=id;$('projectName').value=p.name;$('paperLanguage').value=p.meta.language||'bn';$('institution').value=p.meta.institution||'';$('examName').value=p.meta.examName||'';$('subject').value=p.meta.subject||'';$('className').value=p.meta.className||'';$('duration').value=p.meta.duration||'';$('fullMarks').value=p.meta.fullMarks||'';$('examDate').value=p.meta.examDate||'';$('session').value=p.meta.session||'';renderMeta();renderSections();showView('editor');renderProjectList()}
-function newProject(){const p=blankProject();p.createdBy=sessionStorage.getItem('qps_local_username')||'unknown';projects.unshift(p);currentId=p.id;persist();openProject(p.id);toast('New project created')}
+function newProject(){const p=blankProject();p.createdBy=localStorage.getItem('qps_local_username')||'unknown';projects.unshift(p);currentId=p.id;persist();openProject(p.id);toast('New project created')}
 function showView(view){activeView=view;$('supabaseConnectCard').classList.add('hidden');$('editorView').classList.toggle('hidden',view!=='editor');$('historyView').classList.toggle('hidden',view!=='history');if(view==='history')renderHistory();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
 function toggleSideMenu(){
  const panel=$('sideMenuPanel');
