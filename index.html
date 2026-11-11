@@ -310,7 +310,7 @@ async function connectSupabase(){
   toast('Supabase connected and data synced');
  }catch(err){
   sbSyncReady=false;setSbStatus('Connection / table error',false);
-  $('sbMessage').textContent='Supabase sync হয়নি: '+(err.message||'Network error')+'. SQL Editor-এ নিচের setup SQL Run করুন, তারপর আবার Connect করুন।';
+  $('sbMessage').textContent='Supabase sync হয়নি: '+(err.message||'Network error')+'. সমাধান: Copy database setup SQL চাপুন → Supabase Dashboard > SQL Editor-এ Paste করে Run করুন → 30 সেকেন্ড অপেক্ষা করুন → আবার Connect Supabase চাপুন।';
   toast('Supabase sync failed');
  }
 }
@@ -335,7 +335,8 @@ on public.qps_projects for all
 to anon, authenticated
 using (true)
 with check (true);
-grant select, insert, update, delete on public.qps_projects to anon, authenticated;`;
+grant select, insert, update, delete on public.qps_projects to anon, authenticated;
+notify pgrst, 'reload schema';`;
  if(navigator.clipboard?.writeText){navigator.clipboard.writeText(sql).then(()=>toast('Database setup SQL copied')).catch(()=>prompt('Copy this SQL into Supabase SQL Editor:',sql))}
  else prompt('Copy this SQL into Supabase SQL Editor:',sql);
 }
