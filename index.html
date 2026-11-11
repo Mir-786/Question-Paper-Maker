@@ -144,7 +144,7 @@ body.preview-mode .preview-exit{display:block!important;position:fixed;right:16p
    <button type="button" class="secondary" onclick="disconnectSupabase()">Disconnect</button>
    <button type="button" class="ghost" onclick="copySupabaseSQL()">Copy database setup SQL</button>
   </div>
-  <div class="muted" id="sbMessage" style="margin-top:9px">Connection details are saved in this browser. Use only a Supabase publishable/anon key, never a service_role or secret key.</div>
+  <div class="muted" id="sbMessage" style="margin-top:9px">Connect করুন, তারপর SQL setup চালান। Use only a Supabase publishable/anon key, never a service_role or secret key.</div>
  </section>
  <section id="editorView">
   <div class="topline"><div><h1 id="pageTitle">Question Paper Editor</h1><div class="muted">Create, format and print your question paper.</div></div><div class="actions no-print"><button class="secondary" style="background:#16a34a!important;border-color:#16a34a!important;color:#fff!important" onclick="saveProject(true)">Save now</button><button class="secondary" onclick="document.getElementById('docFile').click()">📂 Load DOCX / DOC</button><input id="docFile" type="file" accept=".docx,.doc" onchange="importDocument(event)"><button class="secondary" style="background:#dc2626!important;border-color:#dc2626!important;color:#fff!important" onclick="togglePrintLayout()">▣ Print layout</button><button onclick="window.print()">🖨 Print / Save PDF</button><button class="secondary" onclick="downloadDocx()">⬇ DOCX download</button></div></div>
@@ -231,12 +231,64 @@ function initLocalLogin(){
 
 const SB_CONFIG_KEY='qps_supabase_config_v1';
 let sbClient=null;
+let sbSyncReady=false;
+let sbSyncQueue=Promise.resolve();
 function sbConfig(){try{return JSON.parse(localStorage.getItem(SB_CONFIG_KEY)||'{}')}catch(e){return {}}}
+function currentUsername(){return sessionStorage.getItem('qps_local_username')||'unknown'}
 function initSupabaseSettings(){
  const c=sbConfig();
  if($('sbUrl'))$('sbUrl').value=c.url||'';
  if($('sbKey'))$('sbKey').value=c.key||'';
- if(c.url&&c.key){$('sbStatus').textContent='Saved · not verified';$('sbStatus').style.background='#fef3c7';$('sbStatus').style.color='#92400e';}
+ if(c.url&&c.key){$('sbStatus').textContent='Saved · not connected';$('sbStatus').style.background='#fef3c7';$('sbStatus').style.color='#92400e';}
+}
+function setSbStatus(label,ok=true){
+ if(!$('sbStatus'))return;
+ $('sbStatus').textContent=label;
+ $('sbStatus').style.background=ok?'#dcfce7':'#fee2e2';
+ $('sbStatus').style.color=ok?'#166534':'#991b1b';
+}
+function sbHeaders(){
+ const c=sbConfig();
+ return {'apikey':c.key,'Authorization':'Bearer '+c.key,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+}
+async function sbRequest(path,options={}){
+ const c=sbConfig();
+ if(!c.url||!c.key)throw new Error('Supabase URL এবং Publishable/anon key সেট করুন');
+ const response=await fetch(c.url+'/rest/v1/'+path,{...options,headers:{...sbHeaders(),...(options.headers||{})}});
+ if(!response.ok){
+  let detail='HTTP '+response.status;
+  try{const body=await response.json();detail=body.message||body.details||body.hint||detail}catch(e){}
+  throw new Error(detail);
+ }
+ if(response.status===204)return null;
+ const text=await response.text();
+ return text?JSON.parse(text):null;
+}
+async function syncProjectsToSupabase(){
+ if(!sbSyncReady)return;
+ const username=currentUsername();
+ const rows=projects.filter(p=>(p.createdBy||username)===username).map(p=>({
+  id:String(p.id),owner_username:username,project_name:p.name||'Untitled question paper',
+  project_data:p,created_at:new Date(p.created||Date.now()).toISOString(),
+  updated_at:new Date(p.updated||Date.now()).toISOString()
+ }));
+ if(!rows.length)return;
+ await sbRequest('qps_projects?on_conflict=id',{method:'POST',body:JSON.stringify(rows)});
+}
+async function loadProjectsFromSupabase(){
+ const username=encodeURIComponent(currentUsername());
+ const rows=await sbRequest('qps_projects?select=id,project_data,updated_at&owner_username=eq.'+username+'&order=updated_at.desc');
+ const remote=(rows||[]).map(r=>r.project_data).filter(p=>p&&p.id);
+ const byId=new Map(projects.map(p=>[String(p.id),p]));
+ remote.forEach(p=>{
+  const old=byId.get(String(p.id));
+  if(!old || Number(p.updated||0)>=Number(old.updated||0))byId.set(String(p.id),p);
+ });
+ projects=[...byId.values()].sort((a,b)=>(b.updated||0)-(a.updated||0));
+ if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;}
+ else currentId=projects[0].id;
+ localStorage.setItem(KEY,JSON.stringify(projects));
+ renderProjectList();openProject(currentId);
 }
 async function connectSupabase(){
  const url=$('sbUrl').value.trim().replace(/\/+$/,'');
@@ -244,41 +296,46 @@ async function connectSupabase(){
  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){toast('সঠিক Supabase Project URL দিন');return}
  if(!key){toast('Publishable / anon key দিন');return}
  if(/service_role|sb_secret/i.test(key)){toast('Secret বা service_role key ব্যবহার করবেন না');return}
- $('sbMessage').textContent='Connecting to Supabase…';
+ $('sbMessage').textContent='Connecting and checking database table…';
+ localStorage.setItem(SB_CONFIG_KEY,JSON.stringify({url,key}));
  try{
   const response=await fetch(url+'/auth/v1/settings',{headers:{apikey:key,Authorization:'Bearer '+key}});
   if(!response.ok)throw new Error('HTTP '+response.status+' — URL বা key পরীক্ষা করুন');
-  localStorage.setItem(SB_CONFIG_KEY,JSON.stringify({url,key}));
-  if(window.supabase?.createClient)sbClient=window.supabase.createClient(url,key);
-  $('sbStatus').textContent='Connected';$('sbStatus').style.background='#dcfce7';$('sbStatus').style.color='#166534';
-  $('sbMessage').textContent='Supabase endpoint verified. Connection settings saved in this browser. Database tables, authentication and Row Level Security setup are still required before project sync is enabled.';
-  toast('Supabase connection successful');
+  await sbRequest('qps_projects?select=id&limit=1');
+  sbSyncReady=true;
+  await loadProjectsFromSupabase();
+  await syncProjectsToSupabase();
+  setSbStatus('Connected · Sync active',true);
+  $('sbMessage').textContent='Supabase connected. এই account-এর projects এখন Supabase-এ sync হচ্ছে।';
+  toast('Supabase connected and data synced');
  }catch(err){
-  $('sbStatus').textContent='Connection failed';$('sbStatus').style.background='#fee2e2';$('sbStatus').style.color='#991b1b';
-  $('sbMessage').textContent='সংযোগ করা যায়নি: '+(err.message||'Network error')+'. URL, key, internet এবং Supabase project status পরীক্ষা করুন।';
+  sbSyncReady=false;setSbStatus('Connection / table error',false);
+  $('sbMessage').textContent='Supabase sync হয়নি: '+(err.message||'Network error')+'. SQL Editor-এ নিচের setup SQL Run করুন, তারপর আবার Connect করুন।';
+  toast('Supabase sync failed');
  }
 }
 function disconnectSupabase(){
- localStorage.removeItem(SB_CONFIG_KEY);sbClient=null;
- $('sbUrl').value='';$('sbKey').value='';$('sbStatus').textContent='Not connected';
- $('sbStatus').style.background='#f1f5f9';$('sbStatus').style.color='#475569';
- $('sbMessage').textContent='Supabase connection settings এই browser থেকে মুছে দেওয়া হয়েছে।';
+ localStorage.removeItem(SB_CONFIG_KEY);sbClient=null;sbSyncReady=false;
+ $('sbUrl').value='';$('sbKey').value='';setSbStatus('Not connected',false);
+ $('sbMessage').textContent='Supabase সংযোগ বিচ্ছিন্ন করা হয়েছে। Local browser data অক্ষত আছে।';
 }
 function copySupabaseSQL(){
- const sql=`create table if not exists public.question_papers (
+ const sql=`create table if not exists public.qps_projects (
  id text primary key,
- owner_id uuid not null references auth.users(id) on delete cascade,
  owner_username text not null,
  project_name text not null,
  project_data jsonb not null,
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()
 );
-alter table public.question_papers enable row level security;
-create policy "Admins can read all papers" on public.question_papers for select to authenticated using (true);
-create policy "Owners can insert own papers" on public.question_papers for insert to authenticated with check (auth.uid() = owner_id);
-create policy "Owners can update own papers" on public.question_papers for update to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
-create policy "Owners can delete own papers" on public.question_papers for delete to authenticated using (auth.uid() = owner_id);`;
+alter table public.qps_projects enable row level security;
+drop policy if exists "qps public app access" on public.qps_projects;
+create policy "qps public app access"
+on public.qps_projects for all
+to anon, authenticated
+using (true)
+with check (true);
+grant select, insert, update, delete on public.qps_projects to anon, authenticated;`;
  if(navigator.clipboard?.writeText){navigator.clipboard.writeText(sql).then(()=>toast('Database setup SQL copied')).catch(()=>prompt('Copy this SQL into Supabase SQL Editor:',sql))}
  else prompt('Copy this SQL into Supabase SQL Editor:',sql);
 }
@@ -287,7 +344,18 @@ const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function blankProject(){return{id:uid(),name:'Untitled question paper',created:Date.now(),updated:Date.now(),createdBy:sessionStorage.getItem('qps_local_username')||'unknown',meta:{language:'bn',institution:'সাফল্য টিউশন সেন্টার',examName:'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন',subject:'',className:'',duration:'',fullMarks:'',examDate:'',session:''},sections:[]}}
 function loadAll(){try{projects=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){projects=[]}projects.forEach(p=>{p.meta=p.meta||{};if(!p.meta.language)p.meta.language='bn';if(!p.meta.institution)p.meta.institution=p.meta.language==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName)p.meta.examName=p.meta.language==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';if(p.meta.session===undefined)p.meta.session=''});if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;persist()}else currentId=projects[0].id;renderProjectList();openProject(currentId)}
-function persist(){localStorage.setItem(KEY,JSON.stringify(projects));renderProjectList()}
+function persist(){
+ localStorage.setItem(KEY,JSON.stringify(projects));renderProjectList();
+ if(sbSyncReady){
+  sbSyncQueue=sbSyncQueue.then(()=>syncProjectsToSupabase()).then(()=>{
+   const status=$('saveStatus');if(status)status.textContent='● Saved to Supabase · '+new Date().toLocaleTimeString();
+  }).catch(err=>{
+   console.error('Supabase sync error:',err);
+   const status=$('saveStatus');if(status)status.textContent='● Local save only · Supabase sync failed';
+   if($('sbMessage'))$('sbMessage').textContent='Supabase sync error: '+(err.message||'Unknown error');
+  });
+ }
+}
 function current(){return projects.find(p=>p.id===currentId)}
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1800)}
 function saveProject(manual=false){const p=current();if(!p)return;p.updated=Date.now();persist();$('saveStatus').textContent='● Saved at '+new Date().toLocaleTimeString();if(manual)toast('Project saved successfully')}
@@ -336,7 +404,17 @@ function renderHistory(){
  const cards=rows.map(p=>`<div class="history-row"><div><strong>${esc(p.name)}</strong><div class="muted">${esc(p.meta.subject||'No subject')} · ${p.sections.reduce((n,s)=>n+s.questions.length,0)} questions · Created by ${esc(p.createdBy||'unknown')} · Last edited ${new Date(p.updated).toLocaleString()}</div></div><div class="actions"><button class="secondary" onclick="openProject('${p.id}')">Open & edit</button><button class="danger" onclick="deleteProject('${p.id}')">মুছুন</button></div></div>`).join('');
  $('historyList').innerHTML=`<div class="history-filters">${tabs}</div>${cards||'<div class="empty">No project history for this user.</div>'}`;
 }
-function deleteProject(id){if(!confirm('Delete this project permanently?'))return;projects=projects.filter(p=>p.id!==id);if(!projects.length){const p=blankProject();projects=[p]}currentId=projects[0].id;persist();openProject(currentId);renderHistory()}
+async function deleteProject(id){
+ if(!confirm('Delete this project permanently?'))return;
+ const deleted=projects.find(p=>String(p.id)===String(id));
+ projects=projects.filter(p=>String(p.id)!==String(id));
+ if(!projects.length){const p=blankProject();projects=[p]}
+ currentId=projects[0].id;persist();openProject(currentId);renderHistory();
+ if(sbSyncReady&&deleted){
+  try{await sbRequest('qps_projects?id=eq.'+encodeURIComponent(String(id)),{method:'DELETE'});}
+  catch(err){console.error('Supabase delete failed:',err);toast('Local delete হয়েছে, Supabase delete ব্যর্থ');}
+ }
+}
 function generateSection(){const p=current(),type=$('typeSelect').value,count=Math.max(1,Math.min(100,parseInt($('countInput').value)||1)),marks=parseFloat($('marksInput').value)||0;const titles={MCQ:'বহুনির্বাচনী প্রশ্ন (MCQ)',SHORT:'সংক্ষিপ্ত প্রশ্ন',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন',LONG:'দীর্ঘ / রচনামূলক প্রশ্ন',FILL:'শূন্যস্থান পূরণ',TRUE:'সত্য / মিথ্যা'};const section={id:uid(),type,title:titles[type],marks,questions:[]};for(let i=0;i<count;i++)section.questions.push({id:uid(),text:'',options:type==='MCQ'?['','','','']:null});p.sections.push(section);renderSections();scheduleSave();toast(count+'টি প্রশ্ন যোগ করা হয়েছে')}
 function renderSections(){const p=current();if(!p)return;const root=$('sections');if(!p.sections.length){root.innerHTML='<div class="empty">এখনও কোনো প্রশ্ন যোগ করা হয়নি। উপরে থেকে প্রশ্নের ধরন নির্বাচন করে বিভাগ যোগ করুন।</div>';return}root.innerHTML=p.sections.map((s,si)=>{const total=s.questions.length*s.marks;const en=current()?.meta?.language==='en';const typeLabels=en?{MCQ:'Choose the correct answer:',FILL:'Fill in the blanks:',TRUE:'Write True or False:',VERY_SHORT:'Answer the following very short questions:',SHORT:'Answer the following short questions:',LONG:'Answer the following long questions:'}:{MCQ:'সঠিক বিকল্পটি নির্বাচন করো:',FILL:'শূন্যস্থান পূরণ করো:',TRUE:'সত্য / মিথ্যা নির্ধারণ করো:',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',SHORT:'সংক্ষিপ্ত প্রশ্নের উত্তর দাও:',LONG:'দীর্ঘ / রচনামূলক প্রশ্নের উত্তর দাও:'};const label=typeLabels[s.type]||s.title|| (en?'Questions':'প্রশ্নাবলি');return `<section data-section="${s.id}"><div class="section-title"><span class="section-label">${si+1}. ${esc(label)}</span><span class="section-total">${s.questions.length} × ${s.marks} = ${total}</span><button class="danger no-print section-delete" style="padding:4px 8px;font-size:11px" onclick="removeSection('${s.id}')">মুছুন</button></div>${s.questions.map((q,qi)=>questionHTML(s,q,qi)).join('')}<button class="add-inline no-print" onclick="addQuestion('${s.id}')">＋ প্রশ্ন যোগ করুন</button></section>`}).join('')}
 function questionHTML(s,q,qi){return `<div class="question" data-q="${q.id}"><div class="qtop"><span class="qnum">${qi+1}.</span><div class="qbody" contenteditable="true" data-placeholder="${({MCQ:'প্রশ্ন লিখুন…',FILL:'শূন্যস্থান পূরণের বাক্য লিখুন…',TRUE:'বাক্যটি লিখুন…',VERY_SHORT:'অতি সংক্ষিপ্ত প্রশ্ন লিখুন…',SHORT:'সংক্ষিপ্ত প্রশ্ন লিখুন…',LONG:'দীর্ঘ প্রশ্ন লিখুন…',IMPORTED:'এখানে সম্পাদনা করুন…'})[s.type]||'প্রশ্ন লিখুন…'}" oninput="editQuestion('${s.id}','${q.id}',this.innerHTML)">${q.text||''}</div><div class="qtools no-print"><button class="secondary" onclick="moveQuestion('${s.id}','${q.id}',-1)" title="Move up">↑</button><button class="secondary" onclick="moveQuestion('${s.id}','${q.id}',1)" title="Move down">↓</button><button class="danger" onclick="removeQuestion('${s.id}','${q.id}')">✕</button></div></div>${q.options?`<div class="options">${q.options.map((o,i)=>`<div><b>(${ 'ABCD'[i] })</b><span contenteditable="true" data-placeholder="Option ${String.fromCharCode(65+i)}" oninput="editOption('${s.id}','${q.id}',${i},this.innerHTML)">${o||''}</span></div>`).join('')}</div>`:''}</div>`}
