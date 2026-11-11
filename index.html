@@ -359,8 +359,19 @@ function persist(){
 }
 function current(){return projects.find(p=>p.id===currentId)}
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1800)}
-function saveProject(manual=false){const p=current();if(!p)return;p.updated=Date.now();persist();$('saveStatus').textContent='● Saved at '+new Date().toLocaleTimeString();if(manual)toast('Project saved successfully')}
-function scheduleSave(){ $('saveStatus').textContent='● Changes pending…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveProject(false),20000)}
+function saveProject(manual=false){
+ const p=current();if(!p)return;
+ p.updated=Date.now();persist();
+ $('saveStatus').textContent=sbSyncReady?'● Saving to Supabase…':'● Saved locally · Supabase not connected';
+ if(manual)toast(sbSyncReady?'Project save sent to Supabase':'Project saved on this device');
+}
+function scheduleSave(){
+ $('saveStatus').textContent='● Changes pending…';
+ clearTimeout(saveTimer);
+ // Persist question edits quickly so the full project_data (including sections/questions)
+ // is written to Supabase before the user navigates away or closes the page.
+ saveTimer=setTimeout(()=>saveProject(false),800);
+}
 function updateProjectName(){const p=current();if(!p)return;p.name=$('projectName').value.trim()||'Untitled question paper';scheduleSave();renderProjectList()}
 function updateMeta(){const p=current();if(!p)return;p.meta={...p.meta,language:$('paperLanguage').value,institution:$('institution').value,examName:$('examName').value,subject:$('subject').value,className:$('className').value,duration:$('duration').value,fullMarks:$('fullMarks').value,examDate:$('examDate').value,session:$('session').value};renderMeta();scheduleSave()}
 function renderMeta(){const m=current()?.meta||{},en=m.language==='en';$('pInstitution').textContent=m.institution||(en?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার');$('pExamName').textContent=m.examName||(en?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন');$('pSubject').textContent=(en?'SUB- ':'বিষয়: ')+(m.subject||'—');$('pClass').textContent=(en?'Class - ':'শ্রেণি - ')+(m.className||'—');$('pDuration').textContent=(en?'TIME- ':'সময়- ')+(m.duration||'—');$('pMarks').textContent=(en?'F.M- ':'পূর্ণমান- ')+(m.fullMarks||'—');$('pSession').textContent=(en?'Session - ':'শিক্ষাবর্ষ - ')+(m.session||'—');$('pNameLabel').firstChild.textContent=en?'Name ':'নাম ';$('pRollLabel').firstChild.textContent=en?'Roll ':'রোল ';$('lblInstitution').textContent=en?'Institution / School name':'প্রতিষ্ঠানের নাম';$('lblExamName').textContent=en?'Exam name':'পরীক্ষার নাম';$('lblSubject').textContent=en?'Subject':'বিষয়';$('lblClass').textContent=en?'Class':'শ্রেণি';$('lblDuration').textContent=en?'Time':'সময়';$('lblMarks').textContent=en?'Full marks':'পূর্ণমান';$('lblDate').textContent=en?'Exam date':'পরীক্ষার তারিখ';$('lblSession').textContent=en?'Session':'শিক্ষাবর্ষ';$('typeSelect').querySelector('option[value="MCQ"]').textContent=en?'Multiple Choice Questions (MCQ)':'বহুনির্বাচনী প্রশ্ন (MCQ)';$('typeSelect').querySelector('option[value="FILL"]').textContent=en?'Fill in the blanks':'শূন্যস্থান পূরণ';$('typeSelect').querySelector('option[value="TRUE"]').textContent=en?'True / False':'সত্য / মিথ্যা';$('typeSelect').querySelector('option[value="VERY_SHORT"]').textContent=en?'Very short questions':'অতি সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="SHORT"]').textContent=en?'Short questions':'সংক্ষিপ্ত প্রশ্ন';$('typeSelect').querySelector('option[value="LONG"]').textContent=en?'Long / descriptive questions':'দীর্ঘ / রচনামূলক প্রশ্ন';}
