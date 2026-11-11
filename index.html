@@ -314,35 +314,37 @@ async function syncProjectsToSupabase(){
  await sbRequest('qps_projects?on_conflict=id',{method:'POST',body:JSON.stringify(rows)});
 }
 async function loadProjectsFromSupabase({background=false}={}){
- // Fetch the shared cloud workspace for every login/device.
- const rows=await sbRequest('qps_projects?select=id,owner_username,project_data,updated_at&order=updated_at.desc');
+ // Cloud is the source of truth for any project ID already present in Supabase.
+ const rows=await sbRequest('qps_projects?select=id,owner_username,project_name,project_data,updated_at&order=updated_at.desc');
  const remote=(rows||[]).map(r=>{
-  const project=r.project_data;
-  if(project&&!project.createdBy)project.createdBy=r.owner_username||'unknown';
-  if(project && !project.updated && r.updated_at)project.updated=Date.parse(r.updated_at)||0;
+  let project=r.project_data;
+  if(typeof project==='string'){try{project=JSON.parse(project)}catch(e){project=null}}
+  if(!project || typeof project!=='object')return null;
+  project.id=project.id||r.id;
+  project.name=project.name||r.project_name||'Untitled question paper';
+  if(!project.createdBy)project.createdBy=r.owner_username||'unknown';
+  const cloudTime=Date.parse(r.updated_at||'')||0;
+  project.updated=Math.max(Number(project.updated||0),cloudTime);
   return project;
  }).filter(p=>p&&p.id);
- const hadRemote=remote.length>0;
- let activeProjectChanged=false;
- const byId=new Map(projects.map(p=>[String(p.id),p]));
- // A fresh device creates a temporary empty local project during startup.
- // Do not let that blank project hide the actual cloud projects.
- if(hadRemote){
-  for(const [id,p] of byId){
-   const isEmpty=(!p.sections||p.sections.length===0) && (!p.name||p.name==='Untitled question paper');
-   if(isEmpty && !remote.some(r=>String(r.id)===id))byId.delete(id);
-  }
- }
- remote.forEach(p=>{
-  const old=byId.get(String(p.id));
-  if(!old || Number(p.updated||0)>Number(old.updated||0)){byId.set(String(p.id),p);if(String(p.id)===String(currentId))activeProjectChanged=true;}
- });
- projects=[...byId.values()].sort((a,b)=>(b.updated||0)-(a.updated||0));
+ const remoteIds=new Set(remote.map(p=>String(p.id)));
+ // Keep local-only projects (unsynced work), but never let a stale local cache
+ // overwrite a project that already exists in the cloud.
+ const localOnly=projects.filter(p=>!remoteIds.has(String(p.id)));
+ // Ignore the empty startup placeholder on a device with no local/cloud work.
+ const usefulLocalOnly=localOnly.filter(p=>!((!p.sections||p.sections.length===0) && (!p.name||p.name==='Untitled question paper')));
+ const previousId=currentId;
+ projects=[...remote,...usefulLocalOnly].sort((a,b)=>(Number(b.updated)||0)-(Number(a.updated)||0));
  if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;}
  else if(!background || !projects.some(p=>String(p.id)===String(currentId)))currentId=projects[0].id;
  localStorage.setItem(KEY,JSON.stringify(projects));
  renderProjectList();
- if(!background || activeProjectChanged || !currentId)openProject(currentId);
+ if(!background || !projects.some(p=>String(p.id)===String(previousId)))openProject(currentId);
+ // Upload only local-only non-placeholder projects; never bulk-upsert stale cache.
+ for(const p of usefulLocalOnly){
+  const owner=p.createdBy||currentUsername();
+  await sbRequest('qps_projects?on_conflict=id',{method:'POST',body:JSON.stringify([{id:String(p.id),owner_username:owner,project_name:p.name||'Untitled question paper',project_data:p,created_at:new Date(p.created||Date.now()).toISOString(),updated_at:new Date(p.updated||Date.now()).toISOString()}])});
+ }
 }
 let cloudPollTimer=null;
 function startCloudPolling(){
@@ -367,7 +369,6 @@ async function connectSupabase(){
   await sbRequest('qps_projects?select=id&limit=1');
   sbSyncReady=true;
   await loadProjectsFromSupabase();
-  await syncProjectsToSupabase();
   startCloudPolling();
   setSbStatus('Connected · Auto sync active',true);
   $('sbMessage').textContent='Supabase connected. এই account-এর projects এখন Supabase-এ sync হচ্ছে।';
@@ -408,7 +409,7 @@ let projects=[],currentId=null,activeView='editor',saveTimer=null;
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function blankProject(){return{id:uid(),name:'Untitled question paper',created:Date.now(),updated:Date.now(),createdBy:localStorage.getItem('qps_local_username')||'unknown',meta:{language:'bn',institution:'সাফল্য টিউশন সেন্টার',examName:'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন',subject:'',className:'',duration:'',fullMarks:'',examDate:'',session:''},sections:[]}}
-function loadAll(){try{projects=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){projects=[]}projects.forEach(p=>{p.meta=p.meta||{};if(!p.meta.language)p.meta.language='bn';if(!p.meta.institution)p.meta.institution=p.meta.language==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName)p.meta.examName=p.meta.language==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';if(p.meta.session===undefined)p.meta.session=''});if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;persist()}else currentId=projects[0].id;renderProjectList();openProject(currentId)}
+function loadAll(){try{projects=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){projects=[]}projects.forEach(p=>{p.meta=p.meta||{};if(!p.meta.language)p.meta.language='bn';if(!p.meta.institution)p.meta.institution=p.meta.language==='en'?'Safollo Tuition Center':'সাফল্য টিউশন সেন্টার';if(!p.meta.examName)p.meta.examName=p.meta.language==='en'?'3rd Summative Evaluation':'তৃতীয় পর্যায়ক্রমিক মূল্যায়ন';if(p.meta.session===undefined)p.meta.session=''});if(!projects.length&&!sbConfig().url){const p=blankProject();projects=[p];currentId=p.id;persist()}else if(projects.length)currentId=projects[0].id;renderProjectList();if(currentId)openProject(currentId)}
 function persist(){
  localStorage.setItem(KEY,JSON.stringify(projects));renderProjectList();
  if(sbSyncReady){
