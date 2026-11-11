@@ -275,6 +275,28 @@ async function sbRequest(path,options={}){
  const text=await response.text();
  return text?JSON.parse(text):null;
 }
+async function syncOneProjectNow(project){
+ if(!project)return;
+ project.updated=Date.now();
+ localStorage.setItem(KEY,JSON.stringify(projects));
+ if(!sbSyncReady){
+  persist();
+  return false;
+ }
+ const id=encodeURIComponent(String(project.id));
+ await sbRequest('qps_projects?id=eq.'+id+'&owner_username=eq.'+encodeURIComponent(currentUsername()),{
+  method:'PATCH',
+  body:JSON.stringify({
+   project_name:project.name||'Untitled question paper',
+   project_data:project,
+   updated_at:new Date(project.updated).toISOString()
+  }),
+  headers:{'Prefer':'return=minimal'}
+ });
+ const status=$('saveStatus');
+ if(status)status.textContent='● Deleted item · synced to Supabase';
+ return true;
+}
 async function syncProjectsToSupabase(){
  if(!sbSyncReady)return;
  const username=currentUsername();
@@ -444,8 +466,40 @@ function questionHTML(s,q,qi){return `<div class="question" data-q="${q.id}"><di
 function editQuestion(sid,qid,html){const q=current().sections.find(s=>s.id===sid)?.questions.find(q=>q.id===qid);if(q){q.text=html;scheduleSave()}}
 function editOption(sid,qid,i,html){const q=current().sections.find(s=>s.id===sid)?.questions.find(q=>q.id===qid);if(q){q.options[i]=html;scheduleSave()}}
 function addQuestion(sid){const s=current().sections.find(s=>s.id===sid);s.questions.push({id:uid(),text:'',options:s.type==='MCQ'?['','','','']:null});renderSections();scheduleSave()}
-function removeQuestion(sid,qid){const s=current().sections.find(s=>s.id===sid);s.questions=s.questions.filter(q=>q.id!==qid);renderSections();scheduleSave()}
-function removeSection(sid){if(!confirm('Delete this complete section and its questions?'))return;current().sections=current().sections.filter(s=>s.id!==sid);renderSections();scheduleSave()}
+async function removeQuestion(sid,qid){
+ const p=current();if(!p)return;
+ const s=p.sections.find(s=>String(s.id)===String(sid));if(!s)return;
+ s.questions=s.questions.filter(q=>String(q.id)!==String(qid));
+ renderSections();clearTimeout(saveTimer);
+ $('saveStatus').textContent='● Deleting question…';
+ try{
+  const synced=await syncOneProjectNow(p);
+  if(synced)toast('Question deleted from server');
+  else {scheduleSave();toast('Question deleted locally · Supabase not connected');}
+ }catch(err){
+  console.error('Question delete sync failed:',err);
+  $('saveStatus').textContent='● Delete sync failed';
+  if($('sbMessage'))$('sbMessage').textContent='Question local থেকে delete হয়েছে, কিন্তু server update ব্যর্থ: '+(err.message||'Unknown error');
+  toast('Server থেকে question delete হয়নি');
+ }
+}
+async function removeSection(sid){
+ if(!confirm('Delete this complete section and its questions?'))return;
+ const p=current();if(!p)return;
+ p.sections=p.sections.filter(s=>String(s.id)!==String(sid));
+ renderSections();clearTimeout(saveTimer);
+ $('saveStatus').textContent='● Deleting section…';
+ try{
+  const synced=await syncOneProjectNow(p);
+  if(synced)toast('Section and questions deleted from server');
+  else {scheduleSave();toast('Section deleted locally · Supabase not connected');}
+ }catch(err){
+  console.error('Section delete sync failed:',err);
+  $('saveStatus').textContent='● Delete sync failed';
+  if($('sbMessage'))$('sbMessage').textContent='Section local থেকে delete হয়েছে, কিন্তু server update ব্যর্থ: '+(err.message||'Unknown error');
+  toast('Server থেকে section delete হয়নি');
+ }
+}
 function moveQuestion(sid,qid,dir){const s=current().sections.find(s=>s.id===sid),i=s.questions.findIndex(q=>q.id===qid),j=i+dir;if(j<0||j>=s.questions.length)return;[s.questions[i],s.questions[j]]=[s.questions[j],s.questions[i]];renderSections();scheduleSave()}
 function fmt(cmd,val=null){document.execCommand(cmd,false,val);document.activeElement?.focus();scheduleSave()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
