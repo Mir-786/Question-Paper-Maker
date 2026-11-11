@@ -313,25 +313,45 @@ async function syncProjectsToSupabase(){
  if(!rows.length)return;
  await sbRequest('qps_projects?on_conflict=id',{method:'POST',body:JSON.stringify(rows)});
 }
-async function loadProjectsFromSupabase(){
- // Load the complete shared workspace, not only projects owned by the currently
- // logged-in local account. Keep createdBy so Project History filters still work.
+async function loadProjectsFromSupabase({background=false}={}){
+ // Fetch the shared cloud workspace for every login/device.
  const rows=await sbRequest('qps_projects?select=id,owner_username,project_data,updated_at&order=updated_at.desc');
  const remote=(rows||[]).map(r=>{
   const project=r.project_data;
   if(project&&!project.createdBy)project.createdBy=r.owner_username||'unknown';
+  if(project && !project.updated && r.updated_at)project.updated=Date.parse(r.updated_at)||0;
   return project;
  }).filter(p=>p&&p.id);
+ const hadRemote=remote.length>0;
+ let activeProjectChanged=false;
  const byId=new Map(projects.map(p=>[String(p.id),p]));
+ // A fresh device creates a temporary empty local project during startup.
+ // Do not let that blank project hide the actual cloud projects.
+ if(hadRemote){
+  for(const [id,p] of byId){
+   const isEmpty=(!p.sections||p.sections.length===0) && (!p.name||p.name==='Untitled question paper');
+   if(isEmpty && !remote.some(r=>String(r.id)===id))byId.delete(id);
+  }
+ }
  remote.forEach(p=>{
   const old=byId.get(String(p.id));
-  if(!old || Number(p.updated||0)>=Number(old.updated||0))byId.set(String(p.id),p);
+  if(!old || Number(p.updated||0)>Number(old.updated||0)){byId.set(String(p.id),p);if(String(p.id)===String(currentId))activeProjectChanged=true;}
  });
  projects=[...byId.values()].sort((a,b)=>(b.updated||0)-(a.updated||0));
  if(!projects.length){const p=blankProject();projects=[p];currentId=p.id;}
- else currentId=projects[0].id;
+ else if(!background || !projects.some(p=>String(p.id)===String(currentId)))currentId=projects[0].id;
  localStorage.setItem(KEY,JSON.stringify(projects));
- renderProjectList();openProject(currentId);
+ renderProjectList();
+ if(!background || activeProjectChanged || !currentId)openProject(currentId);
+}
+let cloudPollTimer=null;
+function startCloudPolling(){
+ if(cloudPollTimer)clearInterval(cloudPollTimer);
+ cloudPollTimer=setInterval(async()=>{
+  if(!sbSyncReady || document.hidden)return;
+  try{await loadProjectsFromSupabase({background:true});}
+  catch(err){console.warn('Cloud refresh failed:',err.message||err)}
+ },7000);
 }
 async function connectSupabase(){
  const url=$('sbUrl').value.trim().replace(/\/+$/,'');
@@ -348,7 +368,8 @@ async function connectSupabase(){
   sbSyncReady=true;
   await loadProjectsFromSupabase();
   await syncProjectsToSupabase();
-  setSbStatus('Connected · Sync active',true);
+  startCloudPolling();
+  setSbStatus('Connected · Auto sync active',true);
   $('sbMessage').textContent='Supabase connected. এই account-এর projects এখন Supabase-এ sync হচ্ছে।';
   toast('Supabase connected and data synced');
  }catch(err){
