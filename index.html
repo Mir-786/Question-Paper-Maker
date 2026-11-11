@@ -353,7 +353,7 @@ function startCloudPolling(){
   if(!sbSyncReady || document.hidden)return;
   try{await loadProjectsFromSupabase({background:true});}
   catch(err){console.warn('Cloud refresh failed:',err.message||err)}
- },7000);
+ },10000);
 }
 async function connectSupabase(){
  const url=$('sbUrl').value.trim().replace(/\/+$/,'');
