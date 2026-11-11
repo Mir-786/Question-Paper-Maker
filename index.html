@@ -284,7 +284,7 @@ async function syncOneProjectNow(project){
   return false;
  }
  const id=encodeURIComponent(String(project.id));
- await sbRequest('qps_projects?id=eq.'+id+'&owner_username=eq.'+encodeURIComponent(currentUsername()),{
+ await sbRequest('qps_projects?id=eq.'+id,{
   method:'PATCH',
   body:JSON.stringify({
    project_name:project.name||'Untitled question paper',
@@ -299,19 +299,29 @@ async function syncOneProjectNow(project){
 }
 async function syncProjectsToSupabase(){
  if(!sbSyncReady)return;
- const username=currentUsername();
- const rows=projects.filter(p=>(p.createdBy||username)===username).map(p=>({
-  id:String(p.id),owner_username:username,project_name:p.name||'Untitled question paper',
-  project_data:p,created_at:new Date(p.created||Date.now()).toISOString(),
-  updated_at:new Date(p.updated||Date.now()).toISOString()
- }));
+ // Sync every locally available project while preserving its original creator.
+ // This allows the same shared workspace to appear on other devices and logins.
+ const rows=projects.map(p=>{
+  const owner=p.createdBy||currentUsername();
+  if(!p.createdBy)p.createdBy=owner;
+  return {
+   id:String(p.id),owner_username:owner,project_name:p.name||'Untitled question paper',
+   project_data:p,created_at:new Date(p.created||Date.now()).toISOString(),
+   updated_at:new Date(p.updated||Date.now()).toISOString()
+  };
+ });
  if(!rows.length)return;
  await sbRequest('qps_projects?on_conflict=id',{method:'POST',body:JSON.stringify(rows)});
 }
 async function loadProjectsFromSupabase(){
- const username=encodeURIComponent(currentUsername());
- const rows=await sbRequest('qps_projects?select=id,project_data,updated_at&owner_username=eq.'+username+'&order=updated_at.desc');
- const remote=(rows||[]).map(r=>r.project_data).filter(p=>p&&p.id);
+ // Load the complete shared workspace, not only projects owned by the currently
+ // logged-in local account. Keep createdBy so Project History filters still work.
+ const rows=await sbRequest('qps_projects?select=id,owner_username,project_data,updated_at&order=updated_at.desc');
+ const remote=(rows||[]).map(r=>{
+  const project=r.project_data;
+  if(project&&!project.createdBy)project.createdBy=r.owner_username||'unknown';
+  return project;
+ }).filter(p=>p&&p.id);
  const byId=new Map(projects.map(p=>[String(p.id),p]));
  remote.forEach(p=>{
   const old=byId.get(String(p.id));
